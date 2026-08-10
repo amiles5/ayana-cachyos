@@ -189,5 +189,7 @@ adapted for the files above):
   colorschemes only), and assorted XDG files (`mimeapps.list`, `user-dirs.*`, etc).
 - Deliberately excluded: `.config/mozilla` (191MB Firefox profile — history/cookies/saved
   logins), `.config/pulse` and `.config/dconf` (small binary runtime state, not really
-  "config"), and micro's 146 bundled default syntax-highlighting files (not user-authored).
+  "config"), micro's 146 bundled default syntax-highlighting files (not user-authored), and
+  `.config/joplin-desktop` (holds the actual notes `database.sqlite`, a live `api.token`
+  secret in `settings.json`, and `ipc_secret_key.txt` — user data/secrets, not config).
 - Pushed to `git@github.com:amiles5/ayana-cachyos.git` (branch `master`).
