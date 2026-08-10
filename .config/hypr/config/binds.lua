@@ -24,8 +24,37 @@ local function cycleAndRaise(opts)
     hl.dispatch(hl.dsp.window.bring_to_top())
 end
 hl.bind("ALT + Tab",                 function() cycleAndRaise() end)
-hl.bind(mainMod .. " + Tab",         hl.dsp.focus({ workspace = "m+1" }))
-hl.bind(mainMod .. " + SHIFT + Tab", hl.dsp.focus({ workspace = "m-1" }))
+
+local function focusNonEmptyWorkspace(step)
+    local activeWs = hl.get_active_workspace()
+    if not activeWs or not activeWs.monitor then return end
+    local monId = activeWs.monitor.id
+    local list = {}
+    for _, ws in ipairs(hl.get_workspaces()) do
+        if ws.monitor and ws.monitor.id == monId and not ws.special then
+            table.insert(list, ws)
+        end
+    end
+    table.sort(list, function(a, b) return a.id < b.id end)
+    local n = #list
+    if n == 0 then return end
+    local idx = 1
+    for i, ws in ipairs(list) do
+        if ws.id == activeWs.id then idx = i end
+    end
+    local target = activeWs.id
+    for offset = 1, n do
+        local i2 = ((idx - 1 + step * offset) % n + n) % n + 1
+        local ws = list[i2]
+        if not ws.is_empty then
+            target = ws.id
+            break
+        end
+    end
+    hl.dispatch(hl.dsp.focus({ workspace = target }))
+end
+hl.bind(mainMod .. " + Tab",         function() focusNonEmptyWorkspace(1) end)
+hl.bind(mainMod .. " + SHIFT + Tab", function() focusNonEmptyWorkspace(-1) end)
 
 -- Move active window around workspaces & monitors
 hl.bind(mainMod .. " + 1", hl.dsp.focus({ workspace = "1" }))
