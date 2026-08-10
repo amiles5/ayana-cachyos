@@ -93,6 +93,31 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
 - Verified via Noctalia's hot-reload (`~/.cache/noctalia/noctalia.log` logged
   `config changed, reloading` immediately after the edit, no parse errors).
 
+## Resume-from-suspend fix (`hypr/scripts/resume-fix.sh`, systemd user service)
+
+- Symptom: after any suspend/resume (idle-triggered or manual), the Studio
+  Display's monitor scale resets from `3.2000` to `2`, and Hyprland keybinds
+  (e.g. `SUPER + Return` for kitty) stop responding.
+- Root cause: the display's DP-over-Thunderbolt (DPIA) link fails to retrain
+  fast enough on wake — confirmed via `journalctl`, which showed ~175
+  `amdgpu: [drm] DPIA AUX failed` / `Mode Validation Warning` lines logged in
+  the same second as `PM: suspend exit`. Hyprland falls back to a mode/scale
+  it can validate instead of the configured one, and the reduced/failed
+  monitor commit appears to also leave the input/bind state stale.
+- Fix: `hypr/scripts/resume-fix.sh` runs `gdbus monitor` against
+  `org.freedesktop.login1`'s `PrepareForSleep` signal and, on `(false,)`
+  (resume), waits 2s for the link to settle then runs `hyprctl reload` to
+  reapply `monitors.lua` and all binds. Wired up as a long-running systemd
+  `--user` service, `systemd/user/hyprland-resume-fix.service`
+  (`WantedBy=graphical-session.target`, restarts on failure).
+- Note: a `WantedBy=sleep.target` unit was tried first but systemd user
+  managers don't have a `sleep.target` by default (`enable` warned "added as
+  a dependency to a non-existent unit") — the D-Bus signal approach is what
+  actually works at the user-service level.
+- Not yet verified against a real suspend/resume cycle (couldn't force one
+  without disrupting the session); confirmed the `gdbus monitor` signal
+  format is correct and the service is enabled and running.
+
 ## Kitty terminal (`kitty/kitty.conf`)
 
 - Middle-click now pastes the system **clipboard** rather than the primary selection:

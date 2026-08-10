@@ -1,0 +1,12 @@
+[Unit]
+Description=Reapply Hyprland config on resume from suspend (fixes monitor scale + keybinds)
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.config/hypr/scripts/resume-fix.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target
