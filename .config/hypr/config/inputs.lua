@@ -3,8 +3,7 @@
 hl.config({
     input = {
         kb_layout    = "gb",
-        kb_model     = "apple",
-        kb_variant   = "mac",
+        kb_model     = "pc105",
         follow_mouse = 1,
         sensitivity  = 0,
         accel_profile = "flat",
