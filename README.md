@@ -93,30 +93,45 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
 - Verified via Noctalia's hot-reload (`~/.cache/noctalia/noctalia.log` logged
   `config changed, reloading` immediately after the edit, no parse errors).
 
-## Resume-from-suspend fix (`hypr/scripts/resume-fix.sh`, systemd user service)
+## Resume-from-suspend fixes (`hypr/config/variables.lua`, `hypr/scripts/resume-fix.sh`, systemd user service)
 
-- Symptom: after any suspend/resume (idle-triggered or manual), the Studio
-  Display's monitor scale resets from `3.2000` to `2`, and Hyprland keybinds
-  (e.g. `SUPER + Return` for kitty) stop responding.
-- Root cause: the display's DP-over-Thunderbolt (DPIA) link fails to retrain
-  fast enough on wake — confirmed via `journalctl`, which showed ~175
-  `amdgpu: [drm] DPIA AUX failed` / `Mode Validation Warning` lines logged in
-  the same second as `PM: suspend exit`. Hyprland falls back to a mode/scale
-  it can validate instead of the configured one, and the reduced/failed
-  monitor commit appears to also leave the input/bind state stale.
-- Fix: `hypr/scripts/resume-fix.sh` runs `gdbus monitor` against
-  `org.freedesktop.login1`'s `PrepareForSleep` signal and, on `(false,)`
-  (resume), waits 2s for the link to settle then runs `hyprctl reload` to
-  reapply `monitors.lua` and all binds. Wired up as a long-running systemd
-  `--user` service, `systemd/user/hyprland-resume-fix.service`
-  (`WantedBy=graphical-session.target`, restarts on failure).
-- Note: a `WantedBy=sleep.target` unit was tried first but systemd user
-  managers don't have a `sleep.target` by default (`enable` warned "added as
-  a dependency to a non-existent unit") — the D-Bus signal approach is what
-  actually works at the user-service level.
-- Not yet verified against a real suspend/resume cycle (couldn't force one
-  without disrupting the session); confirmed the `gdbus monitor` signal
-  format is correct and the service is enabled and running.
+- Symptom: after suspend/resume (idle-triggered or manual) or a reboot, the
+  Studio Display's monitor scale reset from `3.2000` to `2`, and Hyprland
+  keybinds (e.g. `SUPER + Return` for kitty) stopped responding.
+- Two separate causes, both stemming from the display's DP-over-Thunderbolt
+  (DPIA) tunnel:
+  1. **Port renumbering** (the actual scale bug): the display doesn't
+     reliably come back on the same DRM connector — observed as `DP-3` in
+     one boot and `DP-2` in the next (`hyprctl monitors -j`). `MONITOR1`
+     in `variables.lua` was hardcoded to `"DP-3"`, so after a renumber the
+     monitor rule (and the `PRIMARY_MONITOR`-based workspace/window rules
+     in `workspaces.lua`/`windowrules.lua`) silently stopped matching and
+     Hyprland fell back to an auto-computed scale. Fixed by switching
+     `MONITOR1` to `"desc:Apple Computer Inc StudioDisplay 0xBE714649"` —
+     Hyprland's EDID-description match, which is stable across
+     renumbering. This is the durable fix; `monitors.lua` itself is
+     unchanged (still references the `MONITOR1` variable, per its own
+     "edit variables.lua instead" comment).
+  2. **Slow link retrain on wake** (separate, causes stale keybinds): on
+     resume the DPIA AUX channel logs ~175 `amdgpu: [drm] DPIA AUX failed`
+     / `Mode Validation Warning` lines in the same second as
+     `PM: suspend exit` before the link settles. `hyprctl reload`
+     reapplies everything (monitors + binds) once triggered. Fixed with
+     `hypr/scripts/resume-fix.sh`, which runs `gdbus monitor` against
+     `org.freedesktop.login1`'s `PrepareForSleep` signal and, on
+     `(false,)` (resume), waits 2s then runs `hyprctl reload`. Wired up as
+     a long-running systemd `--user` service,
+     `systemd/user/hyprland-resume-fix.service`
+     (`WantedBy=graphical-session.target`, restarts on failure). A
+     `WantedBy=sleep.target` unit was tried first but systemd user
+     managers don't have a `sleep.target` by default (`enable` warned
+     "added as a dependency to a non-existent unit") — the D-Bus signal
+     approach is what actually works at the user-service level.
+- Verified live: after applying the `desc:` match, `hyprctl reload` set
+  `scale: 3.2` on the (still-renamed) `DP-2` connector immediately. The
+  resume-fix service is enabled and running; the `PrepareForSleep`
+  detection logic was confirmed against a manual D-Bus test but not yet
+  exercised by a real suspend cycle.
 
 ## Kitty terminal (`kitty/kitty.conf`)
 
