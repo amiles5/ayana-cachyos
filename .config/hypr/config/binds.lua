@@ -45,9 +45,6 @@ hl.bind(mainMod .. " + SHIFT + Up",                   hl.dsp.window.move({ direc
 hl.bind(mainMod .. " + SHIFT + Right",                hl.dsp.window.move({ direction = "r" }))
 hl.bind(mainMod .. " + SHIFT + Left",                 hl.dsp.window.move({ direction = "l" }))
 hl.bind(mainMod .. " + SHIFT + Down",                 hl.dsp.window.move({ direction = "d" }))
-if MONITOR1 ~= "" then hl.bind(mainMod .. " + SHIFT + 1", hl.dsp.window.move({ monitor = MONITOR1 })) end
-if MONITOR2 ~= "" then hl.bind(mainMod .. " + SHIFT + 2", hl.dsp.window.move({ monitor = MONITOR2 })) end
-if MONITOR3 ~= "" then hl.bind(mainMod .. " + SHIFT + 3", hl.dsp.window.move({ monitor = MONITOR3 })) end
 hl.bind(mainMod .. " + SHIFT + mouse_up",             hl.dsp.window.move({ monitor   = "-1" }))
 hl.bind(mainMod .. " + SHIFT + mouse_down",           hl.dsp.window.move({ monitor   = "+1" }))
 hl.bind(mainMod .. " + CONTROL + SHIFT + Right",      hl.dsp.window.move({ workspace = "m+1" }))
@@ -141,11 +138,6 @@ hl.bind(mainMod .. " + A", hl.dsp.exec_cmd(noctCall .. "panel-toggle control-cen
 -------------------------------
 ---- WORKSPACES & MONITORS ----
 -------------------------------
-
--- Focus on monitors
-if MONITOR1 ~= "" then hl.bind(mainMod .. " + 1", hl.dsp.focus({ monitor = MONITOR1 })) end
-if MONITOR2 ~= "" then hl.bind(mainMod .. " + 2", hl.dsp.focus({ monitor = MONITOR2 })) end
-if MONITOR3 ~= "" then hl.bind(mainMod .. " + 3", hl.dsp.focus({ monitor = MONITOR3 })) end
 
 -- Focus on workspace number
 -- Absolute
