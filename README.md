@@ -84,6 +84,15 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
   `kb_model = "pc105"` with no `kb_variant`; `hyprctl devices -j` now correctly reports
   `English (UK)` instead of `English (UK, Macintosh)`.
 
+## Idle → lock screen (`noctalia/config.toml`)
+
+- Added `[idle.behavior.lock]` (`timeout = 1800`, `action = "lock"`, `enabled = true`) so
+  Noctalia's lock screen triggers automatically after 30 minutes idle.
+- Deliberately left `[idle.behavior.screen-off]` disabled — no DPMS/screen-blanking, only
+  the lock action fires.
+- Verified via Noctalia's hot-reload (`~/.cache/noctalia/noctalia.log` logged
+  `config changed, reloading` immediately after the edit, no parse errors).
+
 ## Kitty terminal (`kitty/kitty.conf`)
 
 - Middle-click now pastes the system **clipboard** rather than the primary selection:

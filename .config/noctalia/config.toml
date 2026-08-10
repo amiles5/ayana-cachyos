@@ -78,6 +78,11 @@ settings_show_advanced = true
     shortcut = "5"
     variant = "destructive"
 
+[idle.behavior.lock]
+timeout = 1800
+action = "lock"
+enabled = true
+
 [system.monitor]
 gpu_poll_seconds = 2
 
