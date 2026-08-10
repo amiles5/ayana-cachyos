@@ -86,10 +86,10 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
 
 ## Idle → lock screen (`noctalia/config.toml`)
 
-- Added `[idle.behavior.lock]` (`timeout = 1800`, `action = "lock"`, `enabled = true`) so
-  Noctalia's lock screen triggers automatically after 30 minutes idle.
-- Deliberately left `[idle.behavior.screen-off]` disabled — no DPMS/screen-blanking, only
-  the lock action fires.
+- Added `[idle.behavior.lock]` (`timeout = 1800`, `action = "lock_and_suspend"`,
+  `enabled = true`) so the system locks and suspends automatically after 30 minutes idle.
+- Deliberately left `[idle.behavior.screen-off]` disabled — no separate DPMS/screen-blanking
+  behavior, only the lock-and-suspend action fires.
 - Verified via Noctalia's hot-reload (`~/.cache/noctalia/noctalia.log` logged
   `config changed, reloading` immediately after the edit, no parse errors).
 
