@@ -11,6 +11,16 @@
 # Only autologin exposed this reliably: the few seconds spent typing a
 # password at the SDDM greeter used to happen to be enough delay to dodge
 # the race.
+#
+# NOTE: this only covers the "tunnel activation fails but the device is
+# already enumerated" race. A separate, worse failure has been observed
+# where the Thunderbolt device isn't detected at all for 60+ seconds and
+# needs a physical replug to appear - this script can't do anything about
+# that (there's no /sys/bus/thunderbolt/devices/ entry yet to toggle), and
+# on that occasion it logged a false "already up" a full 55s before the
+# device actually appeared. The debounce below (require the check to pass
+# twice, 1s apart) guards against a repeat of that specific false positive,
+# though the underlying cause of the single spurious pass wasn't confirmed.
 
 set -u
 
@@ -25,11 +35,21 @@ is_display_up() {
 # Give the retimer/tunnel race a chance to resolve on its own first, polling
 # instead of a flat sleep so we react as soon as it comes up rather than
 # always eating the full wait (observed: it self-heals within ~10s on some
-# boots without needing the reauth below at all).
+# boots without needing the reauth below at all). Requires two consecutive
+# passes before trusting it, to debounce a possible one-off false positive.
+consecutive=0
 for _ in $(seq 1 10); do
     if is_display_up; then
-        logger -t "$LOG_TAG" "Studio Display already up, nothing to do."
-        exit 0
+        consecutive=$((consecutive + 1))
+        if [ "$consecutive" -ge 2 ]; then
+            logger -t "$LOG_TAG" "Studio Display up (confirmed on 2 consecutive checks), nothing to do."
+            exit 0
+        fi
+    else
+        if [ "$consecutive" -gt 0 ]; then
+            logger -t "$LOG_TAG" "Studio Display check passed once then failed on recheck (debounced a possible false positive). Raw hyprctl output: $(hyprctl monitors -j 2>&1 | tr -d '\n')"
+        fi
+        consecutive=0
     fi
     sleep 1
 done

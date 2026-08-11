@@ -427,6 +427,25 @@ adapted for the files above):
   re-enumerated (keyboard/webcam/sensors) and Hyprland picked the display back up under a
   new connector name (`DP-2` → `DP-3`) without issue, since `monitors.lua` targets it by
   `desc:` rather than port name.
+- **A worse, separate failure mode exists that this script can't fix.** On one boot the
+  Thunderbolt device wasn't detected *at all* for 75 seconds (`journalctl -b`: nothing
+  between boltd starting at `11.1s` and `thunderbolt 0-2: new device found... Apple Inc.
+  Studio Display` at `75.4s`) — confirmed to be a genuine physical-link failure, not a
+  logging artifact: a manual unplug/replug at ~75s is what made it appear, timestamps
+  matching to the second. This is different from the "tunnel activation fails but the
+  device is already enumerated" race the script targets — there's no
+  `/sys/bus/thunderbolt/devices/` entry to reauthorize if the device was never discovered
+  in the first place, so the script's recovery mechanism doesn't apply here. Decided against
+  extending the script to cover it (would mean either a much longer poll window slowing
+  down every normal boot, or a mechanism to force-rescan the Thunderbolt bus that hasn't
+  been identified) — treating this as a rare, occasionally-needs-manual-replug case for now.
+- **Found and fixed a false positive while investigating the above.** The script logged
+  "already up, nothing to do" at `20.15s` on that same boot — 55 seconds *before* the
+  display was actually detected, which shouldn't be possible. Root cause not confirmed (jq's
+  handling of empty/missing `hyprctl` output was tested and ruled out), but added a debounce
+  regardless: the poll loop now requires the check to pass twice in a row (1s apart) before
+  trusting it, and logs the raw `hyprctl monitors -j` output if a check passes once then
+  fails on recheck, so a repeat has actual forensic data instead of a guess.
 
 ## Power-on → desktop boot time (`/boot/limine.conf`)
 
