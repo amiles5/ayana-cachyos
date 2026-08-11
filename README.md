@@ -6,6 +6,90 @@ Dotfiles for `ayana` — CachyOS + Hyprland (Wayland), managed with [yadm](https
 This file is a running log of the configuration changes made on this machine, most recent
 context at the bottom of each section.
 
+## Keybind reference (`hypr/config/binds.lua`)
+
+Source of truth is `binds.lua` itself — update this table when binds change.
+
+**Window management**
+
+| Bind | Action |
+| --- | --- |
+| `SUPER + Escape` | Kill focused window (force) |
+| `SUPER + Q` | Close focused window |
+| `SUPER + ALT + Space` | Toggle floating |
+| `SUPER + D` | Fullscreen (mode 1) |
+| `SUPER + F` | Fullscreen |
+| `SUPER + J` | Toggle split layout |
+| `SUPER + Left/Right/Up/Down` | Move focus |
+| `ALT + Tab` | Cycle windows in current workspace, raise focused |
+| `SUPER + Tab` / `SUPER + SHIFT + Tab` | Cycle to next/previous non-empty workspace on current monitor |
+| `SUPER + 1..6` | Focus workspace 1–6 |
+| `SUPER + SHIFT + 1..6` | Move window to workspace 1–6 |
+| `SUPER + SHIFT + Left/Right/Up/Down` | Move window in direction |
+| `SUPER + SHIFT + mouse up/down` | Move window to previous/next monitor |
+| `SUPER + CONTROL + SHIFT + Left/Right` | Move window to workspace on previous/next monitor |
+| `SUPER + CONTROL + SHIFT + mouse up/down` | Same, via scroll |
+| `SUPER + SHIFT + CONTROL + 1..6` | Move window to workspace N on relative monitor |
+| `SUPER + mouse:272` (left) | Drag-move window |
+| `SUPER + mouse:273` (right) | Drag-resize window |
+| `SUPER + Minus` / `SUPER + Plus` | Cursor zoom out/in (repeating) |
+| `SUPER + keypad -` / `keypad +` | Same, via keypad |
+
+**Launcher / apps**
+
+| Bind | Action |
+| --- | --- |
+| `SUPER + Return` | Kitty → workspace 1 |
+| `SUPER + E` | Dolphin (file manager) |
+| `SUPER + T` | gnome-text-editor |
+| `SUPER + C` / `XF86Calculator` | gnome-calculator |
+| `SUPER + SHIFT + Return` | Firefox → workspace 5 |
+| `SUPER + M` | ZapZap (WhatsApp) → workspace 2 |
+| `SUPER + SHIFT + M` | WhatsApp Web, Firefox PWA (for calls) → workspace 2 |
+| `SUPER + ALT + S` | Sonos, Firefox PWA |
+| `CONTROL + SHIFT + Escape` | kitty running btop |
+| `SUPER + Z` | Noctalia settings toggle |
+| `SUPER + X` | Noctalia control center |
+| `SUPER + Space` | Noctalia launcher |
+| `SUPER + period` | Noctalia launcher, emoji picker (`/emo`) |
+| `SUPER + L` | Lock session |
+| `SUPER + ALT + C` | Noctalia session panel (power menu) |
+
+**Hardware controls** (all `{ locked = true }`, work on the lock screen)
+
+| Bind | Action |
+| --- | --- |
+| `XF86AudioRaiseVolume` / `XF86AudioLowerVolume` | Volume up/down |
+| `XF86AudioMute` | Mute |
+| `XF86AudioMicMute` | Mic mute |
+| `XF86AudioPlay` / `XF86AudioPause` | Media play/pause toggle |
+| `XF86AudioNext` / `XF86AudioPrev` | Media next/previous |
+| `XF86MonBrightnessUp` / `XF86MonBrightnessDown` | Brightness up/down |
+
+**Utilities**
+
+| Bind | Action |
+| --- | --- |
+| `SUPER + P` | hyprpicker (color picker) |
+| `Print` | Screenshot region |
+| `SUPER + Print` | Screenshot fullscreen |
+| `SUPER + SHIFT + W` | Wallpaper picker |
+| `SUPER + V` | Clipboard history |
+| `SUPER + A` | Notifications panel |
+
+**Workspaces & monitors**
+
+| Bind | Action |
+| --- | --- |
+| `SUPER + ALT + 1..6` | Focus workspace 1–6 (absolute) |
+| `SUPER + CONTROL + 1..6` | Focus workspace N on relative monitor |
+| `SUPER + CONTROL + Right/Left` | Focus next/previous monitor |
+| `SUPER + CONTROL + Down` | Focus next empty workspace on current monitor |
+| `SUPER + scroll down/up` | Focus next/previous monitor |
+| `SUPER + CONTROL + scroll up/down` | Focus previous/next monitor |
+| `SUPER + SHIFT + S` | Move window to special workspace (scratchpad) |
+| `SUPER + S` | Toggle special workspace (scratchpad) |
+
 ## Display — Apple Studio Display (`hypr/config/monitors.lua`, `variables.lua`)
 
 - Replaced the wildcard/auto monitor rule with an explicit pinned rule for `DP-3`
