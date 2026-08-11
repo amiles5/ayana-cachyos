@@ -13,3 +13,15 @@ hl.monitor({
     position  = "0x0",
     scale     = "3.2000",
 })
+
+-- Ignore both HDMI ports unconditionally, regardless of what's plugged into them.
+-- Studio Display (MONITOR1, above) is the only monitor Hyprland should ever use.
+hl.monitor({
+    output   = "HDMI-A-1",
+    disabled = true,
+})
+
+hl.monitor({
+    output   = "HDMI-A-2",
+    disabled = true,
+})

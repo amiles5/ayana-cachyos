@@ -96,6 +96,15 @@ Source of truth is `binds.lua` itself — update this table when binds change.
   (`MONITOR1 = "DP-3"` in `variables.lua`).
 - Mode `5120x2880@60`, position `0x0`; scale was set to `2.666`, then later re-tuned
   (currently `3.2000`).
+- Both HDMI ports (`HDMI-A-1`, `HDMI-A-2`) are explicitly `disabled = true` in
+  `monitors.lua`, unconditionally. Without this, plugging any monitor into either HDMI
+  port makes Hyprland auto-enable it and extend the desktop onto it — confirmed live via
+  `hyprctl monitors` showing a second, unconfigured HDMI monitor as `disabled: false`
+  alongside the Studio Display. This is a Hyprland/session-level fix, not a BIOS one — see
+  the *Hardware — Minisforum mini PC BIOS* section below for why the boot-time picture
+  (BIOS/GRUB) can only ever come from HDMI regardless of this setting: the Studio Display's
+  USB4/Thunderbolt tunnel has no pre-OS display capability on this SoC, so this only
+  controls what happens once Hyprland has loaded, not what's on screen during boot itself.
 
 ## Audio — Apple Studio Display over Thunderbolt
 
