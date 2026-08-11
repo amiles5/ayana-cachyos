@@ -185,6 +185,11 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
   behavior, only the lock-and-suspend action fires.
 - Verified via Noctalia's hot-reload (`~/.cache/noctalia/noctalia.log` logged
   `config changed, reloading` immediately after the edit, no parse errors).
+- Changed `action` from `lock_and_suspend` to `lock` (timeout unchanged at 1800s/30min) once
+  SDDM autologin was enabled (see *This repo* below) — auto-suspending an unattended,
+  autologin machine means losing the ability to remote in or otherwise regain control until
+  someone is physically there to wake and unlock it. Lock-only avoids that; revisit once
+  there's a reliable remote-wake path.
 
 ## iCloud — native PWA via firefoxpwa
 
@@ -397,4 +402,8 @@ adapted for the files above):
   secret in `settings.json`, and `ipc_secret_key.txt` — user data/secrets, not config),
   and `.local/share/firefoxpwa` (bundled Firefox runtime binary + the iCloud PWA's live
   profile — session/auth cookies, same class as the `.config/mozilla` exclusion above).
+- `/etc/sddm.conf.d/autologin.conf` (`[Autologin]`, `User=milesj`,
+  `Session=hyprland-uwsm`) is outside `$HOME` entirely, so yadm can't track it — noted here
+  so it's not forgotten on a reinstall. Session name confirmed as `hyprland-uwsm` (not
+  plain `hyprland`) via `journalctl -u sddm`, matching what SDDM actually launches.
 - Pushed to `git@github.com:amiles5/ayana-cachyos.git` (branch `master`).

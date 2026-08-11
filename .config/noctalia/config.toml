@@ -80,7 +80,7 @@ settings_show_advanced = true
 
 [idle.behavior.lock]
 timeout = 1800
-action = "lock_and_suspend"
+action = "lock"
 enabled = true
 
 [system.monitor]
