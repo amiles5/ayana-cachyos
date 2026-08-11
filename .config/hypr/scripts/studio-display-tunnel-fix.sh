@@ -22,13 +22,17 @@ is_display_up() {
         'any(.[]; .description == $d)' >/dev/null
 }
 
-# Give the retimer/tunnel race a chance to resolve on its own first.
-sleep 8
-
-if is_display_up; then
-    logger -t "$LOG_TAG" "Studio Display already up, nothing to do."
-    exit 0
-fi
+# Give the retimer/tunnel race a chance to resolve on its own first, polling
+# instead of a flat sleep so we react as soon as it comes up rather than
+# always eating the full wait (observed: it self-heals within ~10s on some
+# boots without needing the reauth below at all).
+for _ in $(seq 1 10); do
+    if is_display_up; then
+        logger -t "$LOG_TAG" "Studio Display already up, nothing to do."
+        exit 0
+    fi
+    sleep 1
+done
 
 logger -t "$LOG_TAG" "Studio Display not detected, looking for its Thunderbolt device."
 

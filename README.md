@@ -409,12 +409,19 @@ adapted for the files above):
   specifically fails.
 - Fixed with `hypr/scripts/studio-display-tunnel-fix.sh`, run once at session start via the
   `studio-display-tunnel-fix.service` systemd user unit (`WantedBy=graphical-session.target`,
-  same pattern as `hyprland-resume-fix.service`): waits 8s, checks `hyprctl monitors -j` for
-  the Studio Display's description; if absent, finds its Thunderbolt device under
-  `/sys/bus/thunderbolt/devices/*/device_name` and cycles `authorized` `0` → `1` (via
-  passwordless `sudo`, since that sysfs attribute is root-only) to force the same retry a
+  same pattern as `hyprland-resume-fix.service`): polls `hyprctl monitors -j` once/sec for up
+  to 10s for the Studio Display's description; if it never shows up, finds its Thunderbolt
+  device under `/sys/bus/thunderbolt/devices/*/device_name` and cycles `authorized` `0` → `1`
+  (via passwordless `sudo`, since that sysfs attribute is root-only) to force the same retry a
   physical replug does, then `hyprctl reload`. Logs outcome via `logger` (tag
   `studio-display-tunnel-fix`, viewable with `journalctl --user -t studio-display-tunnel-fix`).
+- First real reboot test: the DP tunnel failed the same way (`journalctl -b` showed the
+  identical `not enough bandwidth` line), but the display came up on its own within the
+  ~10s poll window — so the kernel *does* eventually recover by itself sometimes, just not
+  reliably or quickly enough to count on, and not always (hence still keeping the forced
+  reauth as a fallback). Originally used a flat `sleep 8` before the first check at all,
+  which wasted time on boots that resolve faster; switched to a 1s poll loop so it reacts as
+  soon as the display appears instead of always eating the full wait.
 - Verified live: manually deauthorized/reauthorized the display's Thunderbolt device
   (`/sys/bus/thunderbolt/devices/0-2/authorized`) while running — the USB tunnel
   re-enumerated (keyboard/webcam/sensors) and Hyprland picked the display back up under a
