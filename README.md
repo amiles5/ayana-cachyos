@@ -122,6 +122,28 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
 - `~/.local/share/icloud-pwa` (the staged manifest/icon) is a one-time install artifact,
   not meaningful config — not yadm-tracked.
 
+## WhatsApp (`hypr/config/binds.lua`)
+
+- No official WhatsApp Linux client exists. Installed **ZapZap**
+  (`com.rtosta.zapzap`, Flathub — GTK4/libadwaita wrapper around web.whatsapp.com,
+  built on QtWebEngine) as the primary chat app, bound to `SUPER + M` (opens on
+  workspace 2, `flatpak run com.rtosta.zapzap`). ZapZap's flatpak data dir
+  (`~/.var/app/com.rtosta.zapzap/`) is deliberately untracked in yadm, same
+  reasoning as the Joplin exclusion above — live session/message data, not config.
+- ZapZap has no voice/video call button — a known upstream limitation, not
+  something specific to this machine (see
+  [rafatosta/zapzap#199](https://github.com/rafatosta/zapzap/issues/199) and
+  [#529](https://github.com/rafatosta/zapzap/issues/529)). Real WhatsApp Web does
+  support calls now, just not through ZapZap's QtWebEngine wrapper.
+- Fixed by installing WhatsApp Web as a second, separate **firefoxpwa** native app
+  (same tooling as the iCloud PWA above — full Firefox WebRTC, so calls work),
+  bound to `SUPER + SHIFT + M` (also workspace 2,
+  `firefoxpwa site launch 01KZQMBXYK6RHNHCWK5S1R1BRG`). Installed straight from
+  WhatsApp Web's real manifest (`https://web.whatsapp.com/data/manifest.json`) —
+  no manifest hand-writing/local HTTP server needed, unlike iCloud.
+- Net result: `SUPER + M` = ZapZap for regular chatting, `SUPER + SHIFT + M` =
+  WhatsApp (Firefox PWA) for voice/video calls.
+
 ## Resume-from-suspend fixes (`hypr/config/variables.lua`, `hypr/scripts/resume-fix.sh`, systemd user service)
 
 - Symptom: after suspend/resume (idle-triggered or manual) or a reboot, the
