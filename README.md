@@ -185,11 +185,11 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
   behavior, only the lock-and-suspend action fires.
 - Verified via Noctalia's hot-reload (`~/.cache/noctalia/noctalia.log` logged
   `config changed, reloading` immediately after the edit, no parse errors).
-- Changed `action` from `lock_and_suspend` to `lock` (timeout unchanged at 1800s/30min) once
-  SDDM autologin was enabled (see *This repo* below) — auto-suspending an unattended,
-  autologin machine means losing the ability to remote in or otherwise regain control until
-  someone is physically there to wake and unlock it. Lock-only avoids that; revisit once
-  there's a reliable remote-wake path.
+- Briefly changed `action` to `lock` (from `lock_and_suspend`) right after SDDM autologin was
+  enabled (see *This repo* below), over concern that auto-suspending an unattended, autologin
+  machine means losing the ability to remote in or otherwise regain control until someone is
+  physically there to wake and unlock it. Reverted back to `lock_and_suspend` shortly after —
+  accepted the tradeoff deliberately rather than leaving it lock-only.
 
 ## iCloud — native PWA via firefoxpwa
 
