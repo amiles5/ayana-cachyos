@@ -428,6 +428,51 @@ adapted for the files above):
   new connector name (`DP-2` → `DP-3`) without issue, since `monitors.lua` targets it by
   `desc:` rather than port name.
 
+## Power-on → desktop boot time (`/boot/limine.conf`)
+
+Power button to Studio Display visible was measured at ~60s. Broken down with
+`systemd-analyze`:
+
+```
+16.6s  firmware (BIOS POST)
+ 5.4s  loader (Limine)
+ 0.6s  kernel
+21.9s  initrd
+ 9.4s  userspace (login → Hyprland graphical.target)
+```
+
+- **Limine timeout**: reduced from `5` to `2` in `/boot/limine.conf` (`timeout: 2`), saves
+  ~3s. Outside `$HOME` so not yadm-tracked — see *This repo* below. Backed up first to
+  `/boot/limine.conf.bak`. Confirmed safe to hand-edit: Secure Boot is disabled and
+  `ENABLE_ENROLL_LIMINE_CONFIG` (config-checksum protection) isn't set, and the header
+  settings (`timeout:`/`default_entry:`/`remember_last_entry:`/theme) aren't touched by
+  `limine-entry-tool` — it only rewrites the per-kernel entry blocks, so this survives
+  kernel updates.
+- **Firmware (16.6s)**: BIOS POST, not controllable from software here without risking the
+  HDMI-for-BIOS-access setup already documented above.
+- **initrd (21.9s) — investigated, not fixed**: nearly the entire initrd phase is a single
+  stall, not many small delays. `journalctl -b -o short-monotonic` shows the last log line
+  at `[4.525s]` (amdgpu/KMS init finishing), then nothing until `[22.39s]`:
+  ```
+  xhci_hcd 0000:07:00.0: Abort failed to stop command ring: -110
+  xhci_hcd 0000:07:00.0: xHCI host controller not responding, assume dead
+  xhci_hcd 0000:07:00.0: HC died; cleaning up
+  ```
+  `0000:07:00.0` is an **Intel JHL7440 "Titan Ridge" Thunderbolt 3 controller**
+  (`lspci -nnk`) — a genuine discrete TB3 chip, which is notable on its own: the earlier
+  *Hardware — Minisforum mini PC BIOS* investigation above concluded there's no discrete
+  controller, only the AMD SoC's integrated USB4 (seen separately as
+  `0000:36:00.5`/domain0 elsewhere in this doc) — worth revisiting that conclusion at some
+  point, but out of scope here. The controller's xHCI command ring hangs for ~18s, the
+  kernel declares it dead and resets it, and everything downstream (Logitech receiver,
+  Studio Display USB passthrough) re-enumerates fine afterward — this is a known general
+  class of Linux/xHCI bug (command-ring timeouts on Thunderbolt-attached xHCI controllers
+  at boot), but no fix confirmed safe for this exact chip was found. Left alone deliberately
+  — kernel-parameter/quirk changes risk an unbootable system, unlike everything else in
+  this doc, and 18s isn't worth that risk. If revisited: first test (zero-risk) is
+  rebooting with the Logitech receiver physically unplugged to see if the hang is
+  device-tied or inherent to the controller regardless of what's attached.
+
 ## This repo
 
 - Tracked: `hypr`, `kitty`, `fish`, `fastfetch`, `noctalia`, `alacritty`, `btop`,
@@ -444,4 +489,6 @@ adapted for the files above):
   `Session=hyprland-uwsm`) is outside `$HOME` entirely, so yadm can't track it — noted here
   so it's not forgotten on a reinstall. Session name confirmed as `hyprland-uwsm` (not
   plain `hyprland`) via `journalctl -u sddm`, matching what SDDM actually launches.
+- `/boot/limine.conf` (`timeout: 2`) is also outside `$HOME` — same reasoning as the SDDM
+  autologin config above. Backup at `/boot/limine.conf.bak`.
 - Pushed to `git@github.com:amiles5/ayana-cachyos.git` (branch `master`).
