@@ -144,6 +144,16 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
 - Net result: `SUPER + M` = ZapZap for regular chatting, `SUPER + SHIFT + M` =
   WhatsApp (Firefox PWA) for voice/video calls.
 
+## Sonos (`hypr/config/binds.lua`)
+
+- Installed the Sonos web app (play.sonos.com) as a native firefoxpwa app, same
+  pattern as iCloud/WhatsApp — real manifest at
+  `https://play.sonos.com/manifest.webmanifest`, no hand-written manifest needed.
+- Bound to `SUPER + ALT + S` (`firefoxpwa site launch 01KZQREYPXKDBAHY9JWSG975VB`,
+  no workspace targeting). `SUPER + S` was already taken (scratchpad toggle,
+  `hl.dsp.workspace.toggle_special()`) — kept that bind as-is and used
+  `SUPER + ALT + S` instead rather than overriding it.
+
 ## Resume-from-suspend fixes (`hypr/config/variables.lua`, `hypr/scripts/resume-fix.sh`, systemd user service)
 
 - Symptom: after suspend/resume (idle-triggered or manual) or a reboot, the
