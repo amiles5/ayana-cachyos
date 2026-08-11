@@ -390,6 +390,37 @@ adapted for the files above):
   7. BIOS settings reset to factory defaults after flashing — reconfigure anything
      customized (boot order, PCIe/graphics allocation, etc.) afterward.
 
+## SDDM autologin + Studio Display boot race (`hypr/scripts/studio-display-tunnel-fix.sh`, systemd user service)
+
+- Enabled SDDM autologin to `hyprland-uwsm` for `milesj`
+  (`/etc/sddm.conf.d/autologin.conf` — see *This repo* below, outside `$HOME` so not
+  yadm-tracked).
+- This exposed a pre-existing Thunderbolt race: `journalctl -b` shows the Studio Display's
+  DP tunnel activation failing with `not enough bandwidth` in the same second the machine's
+  own USB4 retimer reports `new retimer found` — i.e. the DP tunnel gets requested before
+  the retimer has finished initializing, the kernel logs it as a bandwidth problem, and
+  never retries on its own. Manually typing a password at the SDDM greeter used to add just
+  enough delay to dodge this; autologin removes that delay, so the display now reliably
+  needs a physical unplug/replug to force a fresh tunnel-activation attempt.
+- Confirmed it's not a cable/link problem — `/sys/bus/thunderbolt/devices/0-2/{rx,tx}_speed`
+  already negotiate cleanly at `10.0 Gb/s x 2 lanes` (generation 3, 20 Gbps total), the
+  Studio Display's own TB3-class controller's expected ceiling, and the USB side of the
+  tunnel (keyboard passthrough, mic, webcam) comes up fine — only the DP/video tunnel
+  specifically fails.
+- Fixed with `hypr/scripts/studio-display-tunnel-fix.sh`, run once at session start via the
+  `studio-display-tunnel-fix.service` systemd user unit (`WantedBy=graphical-session.target`,
+  same pattern as `hyprland-resume-fix.service`): waits 8s, checks `hyprctl monitors -j` for
+  the Studio Display's description; if absent, finds its Thunderbolt device under
+  `/sys/bus/thunderbolt/devices/*/device_name` and cycles `authorized` `0` → `1` (via
+  passwordless `sudo`, since that sysfs attribute is root-only) to force the same retry a
+  physical replug does, then `hyprctl reload`. Logs outcome via `logger` (tag
+  `studio-display-tunnel-fix`, viewable with `journalctl --user -t studio-display-tunnel-fix`).
+- Verified live: manually deauthorized/reauthorized the display's Thunderbolt device
+  (`/sys/bus/thunderbolt/devices/0-2/authorized`) while running — the USB tunnel
+  re-enumerated (keyboard/webcam/sensors) and Hyprland picked the display back up under a
+  new connector name (`DP-2` → `DP-3`) without issue, since `monitors.lua` targets it by
+  `desc:` rather than port name.
+
 ## This repo
 
 - Tracked: `hypr`, `kitty`, `fish`, `fastfetch`, `noctalia`, `alacritty`, `btop`,

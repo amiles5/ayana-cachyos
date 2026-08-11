@@ -1,0 +1,10 @@
+[Unit]
+Description=Retry Studio Display Thunderbolt DP tunnel activation on boot if it failed
+After=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.config/hypr/scripts/studio-display-tunnel-fix.sh
+
+[Install]
+WantedBy=graphical-session.target
