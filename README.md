@@ -464,14 +464,29 @@ Power button to Studio Display visible was measured at ~60s. Broken down with
   controller, only the AMD SoC's integrated USB4 (seen separately as
   `0000:36:00.5`/domain0 elsewhere in this doc) — worth revisiting that conclusion at some
   point, but out of scope here. The controller's xHCI command ring hangs for ~18s, the
-  kernel declares it dead and resets it, and everything downstream (Logitech receiver,
-  Studio Display USB passthrough) re-enumerates fine afterward — this is a known general
-  class of Linux/xHCI bug (command-ring timeouts on Thunderbolt-attached xHCI controllers
-  at boot), but no fix confirmed safe for this exact chip was found. Left alone deliberately
-  — kernel-parameter/quirk changes risk an unbootable system, unlike everything else in
-  this doc, and 18s isn't worth that risk. If revisited: first test (zero-risk) is
-  rebooting with the Logitech receiver physically unplugged to see if the hang is
-  device-tied or inherent to the controller regardless of what's attached.
+  kernel declares it dead and resets it, and everything downstream re-enumerates fine
+  afterward — a known general class of Linux/xHCI bug (command-ring timeouts on
+  Thunderbolt-attached xHCI controllers at boot).
+  - **Tested and ruled out device-tied causes.** There are two Logitech receiver dongles:
+    one in a native USB-A port directly on the UM690 (enumerates on a completely different
+    controller, `0000:01:00.0`, instantly at `~1s` — almost certainly there specifically for
+    keyboard/mouse during BIOS access over HDMI, since the Titan Ridge/Thunderbolt path
+    isn't available that early) and one in the Studio Display's own USB hub (tunnelled
+    through Thunderbolt, i.e. through the same `0000:07:00.0` that hangs). Rebooted with the
+    UM690's dongle physically unplugged the entire boot: the hang still happened at the
+    identical timestamp (`22.42s` vs `22.39s`/`22.45s` on two prior boots), and the Studio
+    Display's dongle (the only device that ever attaches to `0000:07:00.0`) doesn't even
+    enumerate until `27.57s` — *after* the hang already resolved. So the hang isn't caused by
+    anything attached to the controller; it's inherent to the chip/driver's own boot-time
+    init, matching a kernel mailing list report of the same Titan-Ridge-class symptom
+    occurring "even without USB4 peripherals plugged in."
+  - No fix confirmed safe for this exact chip was found. Left alone deliberately —
+    kernel-parameter/quirk changes risk an unbootable system, unlike everything else in this
+    doc, and 18s isn't worth that risk.
+- Net result of this investigation: power-on-to-desktop measured at **50.9s**, down from the
+  original ~60s (`systemd-analyze`: 16.4s firmware + 2.4s loader + 0.6s kernel + 21.9s initrd
+  + 9.5s userspace), almost entirely from the Limine timeout cut — the initrd hang is
+  unchanged and understood to be structural, not a regression from anything in this repo.
 
 ## This repo
 
