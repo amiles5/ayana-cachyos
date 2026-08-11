@@ -480,6 +480,13 @@ Power button to Studio Display visible was measured at ~60s. Broken down with
     anything attached to the controller; it's inherent to the chip/driver's own boot-time
     init, matching a kernel mailing list report of the same Titan-Ridge-class symptom
     occurring "even without USB4 peripherals plugged in."
+  - **Tried `pcie_aspm=off` as a one-off boot test.** Added it to just the `linux-cachyos`
+    entry's `cmdline` in `/boot/limine.conf` (backed up first, reverted immediately after),
+    rebooted, confirmed it took effect (`PCIe ASPM is disabled` in the kernel log) — no
+    change: hang still at `22.459s`, indistinguishable from every untouched boot. Kernel log
+    also showed ACPI FADT already reports ASPM as unsupported/BIOS-disabled on this board
+    regardless of the parameter, so there was nothing for it to actually change here — a
+    clean negative result, not an inconclusive one.
   - No fix confirmed safe for this exact chip was found. Left alone deliberately —
     kernel-parameter/quirk changes risk an unbootable system, unlike everything else in this
     doc, and 18s isn't worth that risk.
