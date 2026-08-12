@@ -526,6 +526,22 @@ the Linux equivalent of macOS's built-in text substitution.
   it) — more useful than `journalctl --user -u espanso.service`, which only
   captures the `launcher` process's own start/stop, not the daemon/worker's
   actual output.
+- **Known upstream bug**: an empty/blank "Espanso Sync Tool" window (class-less,
+  `~1580x845` floating) can pop up unprompted — wxWidgets-on-Wayland rendering
+  issue, not specific to this machine
+  ([espanso/espanso#1976](https://github.com/espanso/espanso/issues/1976),
+  [#2156](https://github.com/espanso/espanso/issues/2156)). First seen right
+  after setting `keyboard_layout` above — #1976 specifically notes layout
+  changes retrigger this tool. It's cosmetic (doesn't affect actual
+  expansion) but won't close normally; force-kill it:
+  ```
+  hyprctl clients -j | jq -r '.[] | select(.title=="Espanso Sync Tool") | .address'
+  hyprctl dispatch 'hl.dsp.focus({ window = "address:<addr>" })'
+  hyprctl dispatch 'hl.dsp.window.kill()'
+  ```
+  Killing it takes the worker process down with it (same PID owns the
+  window), but the daemon auto-respawns a fresh worker immediately —
+  confirmed via `espanso status` and `espanso match list` right after.
 
 ## Fish shell — `ls`/`la`/`ll`/`lt`/`l.` aliases (`fish/config.fish`)
 
