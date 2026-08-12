@@ -9,5 +9,8 @@ set -eu
 cd "$(dirname "$0")"
 
 pacman -Qqe > pacman-explicit.txt
-pacman -Qqm > pacman-foreign-aur.txt
+# pacman -Qqm exits 1 (with no output) when there are no foreign/AUR packages
+# installed, which is normal on this system - don't let `set -e` kill the
+# script over that.
+pacman -Qqm > pacman-foreign-aur.txt || true
 flatpak list --app --columns=application 2>/dev/null > flatpak.txt || true
