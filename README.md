@@ -526,10 +526,16 @@ Power button to Studio Display visible was measured at ~60s. Broken down with
 - `flatpak.txt` — output of `flatpak list --app --columns=application`
   (currently just `com.rtosta.zapzap` — WhatsApp). Restore with
   `flatpak install flathub $(cat ~/.pkglist/flatpak.txt)`.
-- `update.sh` — regenerates all three files from current system state. Run it
-  after installing/removing packages, then `yadm add .pkglist` + commit + push
-  to keep the recovery list current. Not run automatically (no hook) — it's a
-  manual step, easy to forget after an ad-hoc `pacman -S`.
+- `update.sh` — regenerates all three files from current system state.
+  Run automatically **weekly** by the `pkglist-update.timer` systemd user
+  unit (`pkglist-update.{service,timer}`, `WantedBy=timers.target`; no cron
+  daemon is installed on this system, so a systemd timer is the equivalent).
+  Check next/last run: `systemctl --user list-timers pkglist-update.timer`.
+  The timer only regenerates the files — it does **not** `yadm add`/commit/push
+  automatically (didn't want unreviewed commits happening unattended). Still
+  need to run `yadm add .pkglist` + commit + push by hand to actually capture
+  a change; `Persistent=true` means a missed weekly run (machine off) fires
+  once at next boot instead of being skipped.
 
 ## This repo
 

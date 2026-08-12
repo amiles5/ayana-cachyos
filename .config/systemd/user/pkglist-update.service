@@ -1,0 +1,6 @@
+[Unit]
+Description=Regenerate .pkglist package recovery lists
+
+[Service]
+Type=oneshot
+ExecStart=%h/.pkglist/update.sh

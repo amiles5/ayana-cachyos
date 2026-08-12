@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Regenerate the package lists in this directory from current system state.
-# Run after installing/removing packages, then `yadm add`/commit/push to keep
-# the recovery list in sync. See README.md "Package lists" section.
+# Run automatically weekly via the pkglist-update.timer systemd user unit,
+# and also after installing/removing packages if you want it sooner. Either
+# way, still need to `yadm add .pkglist` + commit + push manually - this
+# script only regenerates the files, it never commits. See README.md
+# "Package lists" section.
 set -eu
 cd "$(dirname "$0")"
 
