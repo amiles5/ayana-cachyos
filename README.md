@@ -72,8 +72,9 @@ Source of truth is `binds.lua` itself — update this table when binds change.
 | Bind | Action |
 | --- | --- |
 | `SUPER + P` | hyprpicker (color picker) |
-| `Print` | Screenshot region |
-| `SUPER + Print` | Screenshot fullscreen |
+| `Print` / `SUPER + Print` | Screenshot region/fullscreen (dead on the current keyboard, see note below) |
+| `SUPER + comma` | Screenshot region |
+| `SUPER + SHIFT + comma` | Screenshot fullscreen |
 | `SUPER + SHIFT + W` | Wallpaper picker |
 | `SUPER + V` | Clipboard history |
 | `SUPER + A` | Notifications panel |
@@ -143,10 +144,29 @@ udev rule (`/usr/lib/udev/rules.d/20-asd-backlight.rules`, tags the display's
 - Both bindings now also call `noctalia msg brightness-osd <value>` after
   each change (fetching the new % from `asdbctl get`) so the change shows an
   on-screen OSD, same as volume/mic — `asdbctl` alone has no visual feedback.
+- See "Screenshots" below — the same MX Keys Mechanical firmware-only-key
+  situation also killed the `Print` bind.
 - Since it's an AUR package, it lands in `.pkglist/pacman-foreign-aur.txt`
   (see "Package lists" section) rather than the plain pacman list — on a
   reinstall it needs the manual `git clone` + `makepkg -si` above, not
   `pacman -S`.
+
+## Screenshots (`hypr/config/binds.lua`, `grim`/`slurp`/`satty`)
+
+- `Print` (region) / `SUPER + Print` (fullscreen) call noctalia's
+  `screenshot-region`/`screenshot-fullscreen`, which drive `grim` + `slurp`
+  for capture and pipe the result into `satty` for annotation (arrows, text,
+  blur, etc.) instead of saving straight to disk —
+  `[shell.screenshot]` in `noctalia/config.toml`
+  (`pipe_to_command = true`, `save_to_file = false`).
+- The `Print` key is dead on the current keyboard (Logitech MX Keys
+  Mechanical): confirmed via `evtest` that no key/Fn-combo on it produces a
+  `KEY_PRINT` (or `KEY_SYSRQ`) event, even though the device's HID descriptor
+  declares `KEY_PRINT` as a supported capability — same firmware-only-key
+  situation as the keyboard-illumination key documented in "Brightness"
+  above. Added `SUPER + comma` (region) / `SUPER + SHIFT + comma`
+  (fullscreen) as reachable binds; kept the dead `Print` binds in case a
+  future keyboard has a real PrtSc key.
 
 ## Audio — Apple Studio Display over Thunderbolt
 

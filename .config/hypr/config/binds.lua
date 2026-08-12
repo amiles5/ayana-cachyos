@@ -174,8 +174,15 @@ hl.bind(mainMod .. " + bracketright", hl.dsp.exec_cmd(brightnessUpCmd),   { repe
 
 -- Screen Capture
 hl.bind(mainMod .. " + P",     hl.dsp.exec_cmd("hyprpicker -a -n"))
+-- "Print" is dead on the MX Keys Mechanical: the device declares KEY_PRINT as
+-- a supported capability but no physical key actually sends it (confirmed
+-- via evtest across every key/Fn-combo tried, same firmware-only situation as
+-- the keyboard-illumination key). Kept below in case of a future keyboard
+-- with a real PrtSc key, but SUPER+comma/SHIFT+comma are the reachable binds.
 hl.bind("Print",               hl.dsp.exec_cmd(noctCall .. "screenshot-region"))
 hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd(noctCall .. "screenshot-fullscreen"))
+hl.bind(mainMod .. " + comma",         hl.dsp.exec_cmd(noctCall .. "screenshot-region"))
+hl.bind(mainMod .. " + SHIFT + comma", hl.dsp.exec_cmd(noctCall .. "screenshot-fullscreen"))
 
 -- Theming and Wallpaper
 hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(noctCall .. "panel-toggle wallpaper"))
