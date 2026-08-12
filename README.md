@@ -359,7 +359,7 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
   detection logic was confirmed against a manual D-Bus test but not yet
   exercised by a real suspend cycle.
 
-## Printer — Brother HL-1210W (CUPS + `brlaser`)
+## Printer — Brother HL-1210W (CUPS + `brlaser`, AirPrint)
 
 - Discovered on the LAN via `avahi-browse -a -t -r` (mDNS): `Brother HL-1210W
   series` at `192.168.1.252` (`BRN106FD981C68E.local`), offering raw
@@ -394,6 +394,37 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
   `brlaser` are captured in `.pkglist/` instead (`brlaser` lands in the
   foreign/AUR list, needs the manual `git clone` + `makepkg -si` above to
   restore).
+
+### AirPrint (iOS)
+
+By default CUPS only accepts connections from `localhost`, and UFW (active,
+default-deny incoming) blocks everything else anyway — so the printer was
+discoverable but couldn't actually receive a job from an iPhone/iPad without
+these three changes:
+
+- `lpadmin -p Brother_HL1210W -o printer-is-shared=true` — marks the queue
+  shared (`printers.conf` → `Shared Yes`).
+- `/etc/cups/cupsd.conf`: `Listen localhost:631` → `Port 631`, so `cupsd`
+  binds `0.0.0.0:631`/`[::]:631` instead of just loopback. Backed up first to
+  `/etc/cups/cupsd.conf.bak`. Restarted `cups.service` to apply.
+- `sudo ufw allow from 192.168.1.0/24 to any port 631 proto tcp comment
+  'CUPS/IPP printing (AirPrint)'` — scoped to the LAN subnet, not open
+  globally. mDNS itself (5353/udp) didn't need a rule; UFW's default
+  `before.rules` already carves out an exception for the
+  224.0.0.251/1900 multicast groups avahi/SSDP use, which is why discovery
+  already worked before this — only the actual IPP job-submission port was
+  blocked.
+- Verified via `avahi-browse -a -t -r`: the shared queue now advertises
+  itself as "Brother HL-1210W (Bramley Woods) @ ayana-7" with
+  `URF=V1.4,CP1,W8,PQ4,RS600,FN3` and
+  `pdl=application/pdf,application/postscript,image/jpeg,image/png,image/pwg-raster,image/urf`
+  in its TXT record — the specific fields iOS's AirPrint discovery checks
+  for (`URF` + `application/pdf`/`image/urf` in `pdl`). Also picked up
+  `mopria-certified=1.3` for free (Android/Mopria uses the same discovery
+  mechanism). CUPS generates all of this automatically from the PPD; nothing
+  hand-written. Not yet tested from an actual iOS device.
+- UFW rules (`/etc/ufw/*`) are outside `$HOME` too — not yadm-tracked, noted
+  here and in "This repo" below. To recreate: the `ufw allow` command above.
 
 ## Fish shell — `ls`/`la`/`ll`/`lt`/`l.` aliases (`fish/config.fish`)
 
@@ -679,6 +710,8 @@ Power button to Studio Display visible was measured at ~60s. Broken down with
 - `/boot/limine.conf` (`timeout: 2`) is also outside `$HOME` — same reasoning as the SDDM
   autologin config above. Backup at `/boot/limine.conf.bak`.
 - `/etc/cups/*` (printer queue config, added by `lpadmin` for the Brother
-  HL-1210W — see "Printer" section above) is outside `$HOME` too. Not backed
-  up anywhere; recreate with the `lpadmin` command in that section if lost.
+  HL-1210W, plus the `Listen`→`Port` edit for AirPrint) and `/etc/ufw/*`
+  (the LAN-scoped port-631 rule) are outside `$HOME` too — see "Printer"
+  section above for the exact commands to recreate both if lost.
+  `cupsd.conf.bak` is the only backup; the rest isn't backed up anywhere.
 - Pushed to `git@github.com:amiles5/ayana-cachyos.git` (branch `master`).
