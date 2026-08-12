@@ -65,7 +65,7 @@ Source of truth is `binds.lua` itself — update this table when binds change.
 | `XF86AudioPlay` / `XF86AudioPause` | Media play/pause toggle |
 | `XF86AudioNext` / `XF86AudioPrev` | Media next/previous |
 | `XF86MonBrightnessUp` / `XF86MonBrightnessDown` | Brightness up/down (see note below — unreachable on the current keyboard) |
-| `SUPER + XF86KbdBrightnessDown` / `SUPER + XF86KbdBrightnessUp` | Brightness down/up (see note below) |
+| `SUPER + bracketleft` / `SUPER + bracketright` | Brightness down/up (see note below) |
 
 **Utilities**
 
@@ -129,14 +129,16 @@ udev rule (`/usr/lib/udev/rules.d/20-asd-backlight.rules`, tags the display's
 - The keyboard in use (Logitech MX Keys Mechanical) has no dedicated
   display-brightness function on its F-row at all — it's lock/app-switcher/
   screenshot/media/volume instead — so those `XF86MonBrightness*` keys are
-  unreachable from this keyboard regardless of the Hyprland-side binding. It
-  does have a dedicated *keyboard illumination* up/down key
-  (`XF86KbdBrightnessUp`/`Down`), which normally controls the keyboard's own
-  backlight. Bound `SUPER + XF86KbdBrightnessUp`/`Down` to Studio Display
-  brightness instead — held with SUPER it drives `asdbctl`, unmodified it
-  still does the keyboard's own backlight as before. (An earlier
-  `SUPER + bracketleft`/`bracketright` fallback was superseded by this and
-  removed.)
+  unreachable from this keyboard regardless of the Hyprland-side binding.
+  Added `SUPER + bracketleft`/`bracketright` as a reachable fallback.
+- Also tried repurposing the keyboard's dedicated *illumination* up/down key
+  as `SUPER + XF86KbdBrightnessUp`/`Down`. Didn't work — root-caused via
+  `evtest` (installed for this) on every input node the USB receiver exposes
+  (`event9` main keyboard, `event11` Consumer Control, `event12` System
+  Control): pressing the key produces **zero** kernel input events on any of
+  them, confirming it's handled entirely in the keyboard's own firmware and
+  never reaches Linux at all, regardless of what it's bound to. Reverted to
+  the `SUPER + bracket` bind above.
 - Both bindings now also call `noctalia msg brightness-osd <value>` after
   each change (fetching the new % from `asdbctl get`) so the change shows an
   on-screen OSD, same as volume/mic — `asdbctl` alone has no visual feedback.

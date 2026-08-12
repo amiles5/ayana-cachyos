@@ -159,13 +159,14 @@ hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd(brightnessUpCmd),   { locked = 
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(brightnessDownCmd), { locked = true, repeating = true })
 -- The Logitech MX Keys Mechanical's F-row has no display-brightness function
 -- at all (lock/app-switcher/screenshot/media/volume instead), so the XF86
--- keys above are unreachable from this keyboard - it only has a dedicated
--- *keyboard illumination* up/down key (XF86KbdBrightnessUp/Down), which by
--- default controls the keyboard's own backlight. Repurposed with SUPER held
--- to control the Studio Display instead; unmodified press still does the
--- keyboard's own backlight as normal.
-hl.bind(mainMod .. " + XF86KbdBrightnessDown", hl.dsp.exec_cmd(brightnessDownCmd), { repeating = true })
-hl.bind(mainMod .. " + XF86KbdBrightnessUp",   hl.dsp.exec_cmd(brightnessUpCmd),   { repeating = true })
+-- keys above are unreachable from this keyboard. Its dedicated keyboard-
+-- illumination key was tried as SUPER+XF86KbdBrightnessUp/Down, but that key
+-- is handled entirely in the keyboard's own firmware - confirmed via evtest
+-- on every input node the receiver exposes (event9/11/12): pressing it
+-- produces zero kernel input events, so there is no keysym to ever bind to.
+-- SUPER+bracket is the reachable fallback instead.
+hl.bind(mainMod .. " + bracketleft",  hl.dsp.exec_cmd(brightnessDownCmd), { repeating = true })
+hl.bind(mainMod .. " + bracketright", hl.dsp.exec_cmd(brightnessUpCmd),   { repeating = true })
 
 -------------------
 ---- UTILITIES ----
