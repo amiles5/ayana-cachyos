@@ -272,34 +272,25 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
   physically there to wake and unlock it. Reverted back to `lock_and_suspend` shortly after —
   accepted the tradeoff deliberately rather than leaving it lock-only.
 
-## iCloud — native PWA via firefoxpwa
+## iCloud — removed
 
 - No official iCloud Linux client exists. Tried the AUR `icloud-for-linux-git` package
   (unmaintained Electron wrapper around icloud.com, github.com/wmwnuk/icloud-for-linux,
   flagged out-of-date since Aug 2024) — its build fails on this system because npm 12's
-  new script-allowlist blocks Electron's `postinstall` (worked around with
-  `npm_config_dangerously_allow_all_scripts=true`, scoped to just that one `npm install`),
-  and then the old `extract-zip`-based Electron/electron-packager toolchain (pinned to
-  Electron 21, ~2022-era) stalls mid-extraction against this system's Node v26 runtime —
-  confirmed by cross-checking the project's (mislabeled) "flatpak" fork, which is actually
-  a Snap manifest pinned to `node/16/stable`, i.e. the same fix, just via an even heavier
-  path (snapd isn't installed here and isn't native to Arch/CachyOS).
-- Installed instead via `firefoxpwa` (`extra/firefoxpwa` / `cachyos-extra-v3/firefoxpwa`),
-  Mozilla's native-PWA tooling — no Electron build involved, uses Firefox's own dedicated
-  runtime instead:
-  - `sudo pacman -S firefoxpwa`, then `firefoxpwa runtime install` (downloads + locally
-    patches a standalone Firefox runtime for running PWAs).
-  - `firefoxpwa profile create --name iCloud` — dedicated profile, isolated from the
-    regular Firefox profile.
-  - `firefoxpwa site install --profile <ULID> ...` installs the site. icloud.com has no
-    real web app manifest, and `site install` requires an `http(s)://` manifest URL (no
-    `file://`), so a minimal hand-written manifest + the site's own favicon were staged at
-    `~/.local/share/icloud-pwa/{manifest.json,favicon.ico}` and served briefly over
-    `python3 -m http.server` just for the install step (not needed afterward).
-  - Generates `~/.local/share/applications/FFPWA-<ULID>.desktop` — shows up in the app
-    launcher as "iCloud", own window class (`FFPWA-<ULID>`), no browser chrome.
-- `~/.local/share/icloud-pwa` (the staged manifest/icon) is a one-time install artifact,
-  not meaningful config — not yadm-tracked.
+  new script-allowlist blocks Electron's `postinstall`, and the old
+  `extract-zip`-based Electron/electron-packager toolchain (pinned to Electron 21,
+  ~2022-era) stalls mid-extraction against this system's Node v26 runtime — confirmed
+  by cross-checking the project's (mislabeled) "flatpak" fork, which is actually a Snap
+  manifest pinned to `node/16/stable`, i.e. the same fix, just via an even heavier path
+  (snapd isn't installed here and isn't native to Arch/CachyOS). **Worth knowing if
+  iCloud access is wanted again: don't retry this path, it's a dead end as-is.**
+  Installed instead via `firefoxpwa` (Mozilla's native-PWA tooling — no Electron
+  build involved), the same tooling used for WhatsApp/Sonos below.
+- Later removed entirely (`firefoxpwa site uninstall <id>` +
+  `firefoxpwa profile remove <id>`, dedicated profile since it wasn't shared with
+  any other PWA), plus the leftover `~/.local/share/icloud-pwa` staging directory
+  (manifest/favicon files used only for the one-time install, never yadm-tracked).
+  `firefoxpwa` itself is left installed — WhatsApp and Sonos still use it.
 
 ## WhatsApp (`hypr/config/binds.lua`)
 
@@ -715,8 +706,9 @@ Power button to Studio Display visible was measured at ~60s. Broken down with
   "config"), micro's 146 bundled default syntax-highlighting files (not user-authored),
   `.config/joplin-desktop` (holds the actual notes `database.sqlite`, a live `api.token`
   secret in `settings.json`, and `ipc_secret_key.txt` — user data/secrets, not config),
-  and `.local/share/firefoxpwa` (bundled Firefox runtime binary + the iCloud PWA's live
-  profile — session/auth cookies, same class as the `.config/mozilla` exclusion above).
+  and `.local/share/firefoxpwa` (bundled Firefox runtime binary + the WhatsApp/Sonos
+  PWA profiles' live session/auth cookies, same class as the `.config/mozilla`
+  exclusion above).
 - `/etc/sddm.conf.d/autologin.conf` (`[Autologin]`, `User=milesj`,
   `Session=hyprland-uwsm`) is outside `$HOME` entirely, so yadm can't track it — noted here
   so it's not forgotten on a reinstall. Session name confirmed as `hyprland-uwsm` (not
