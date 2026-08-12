@@ -5,7 +5,7 @@ source /usr/share/cachyos-fish-config/cachyos-config.fish
 # so lt falls back to a recursive listing instead.
 alias ls='ls -alF --color=always --group-directories-first'
 alias la='ls -a --color=always --group-directories-first'
-alias ll='ls -l --color=always --group-directories-first'
+alias ll='ls -latr --color=always'
 alias lt='ls -R -a --color=always --group-directories-first'
 alias l.="ls -a | grep -e '^\.'"
 

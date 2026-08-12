@@ -368,6 +368,10 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
   equivalents instead (`--color=always --group-directories-first`, no icons).
   `lt` (was `eza -aT`, a tree listing) has no direct `ls` equivalent, so it
   falls back to `ls -R -a` (recursive, not a tree).
+- `ll` is `ls -latr` (all files, long format, sorted by modification time,
+  oldest first/newest last) rather than the plain `ls -l` it started as — no
+  `--group-directories-first` here since that would fight the time-based
+  sort order that's the whole point of `-tr`.
 - `eza` itself is still installed — it's a hard dependency of
   `cachyos-fish-config` (`pacman -Qi eza` → `Required By: cachyos-fish-config`),
   so removing it would cascade-remove that package too, which still provides
