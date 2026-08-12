@@ -10,6 +10,11 @@ context at the bottom of each section.
 
 Source of truth is `binds.lua` itself — update this table when binds change.
 
+Notation: `+` between keys means "hold together," it's not a literal key to
+press. Punctuation keys (`comma`, `period`, `bracketleft`, `bracketright`,
+etc.) are their unshifted form unless `SHIFT` is explicitly listed — e.g.
+`SUPER + comma` is `SUPER` + the bare `,` key, not `SUPER` + `Shift` + `,`.
+
 **Window management**
 
 | Bind | Action |
