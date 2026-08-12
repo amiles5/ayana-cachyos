@@ -359,6 +359,20 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
   detection logic was confirmed against a manual D-Bus test but not yet
   exercised by a real suspend cycle.
 
+## Fish shell — `ls`/`la`/`ll`/`lt`/`l.` aliases (`fish/config.fish`)
+
+- `config.fish` sources CachyOS's `/usr/share/cachyos-fish-config/cachyos-config.fish`
+  (system file, package-managed, not `$HOME`/not yadm-tracked), which defines
+  `ls`/`la`/`ll`/`lt`/`l.` as `eza`-based aliases by default.
+- Overridden immediately after that `source` line with plain coreutils `ls`
+  equivalents instead (`--color=always --group-directories-first`, no icons).
+  `lt` (was `eza -aT`, a tree listing) has no direct `ls` equivalent, so it
+  falls back to `ls -R -a` (recursive, not a tree).
+- `eza` itself is still installed — it's a hard dependency of
+  `cachyos-fish-config` (`pacman -Qi eza` → `Required By: cachyos-fish-config`),
+  so removing it would cascade-remove that package too, which still provides
+  other defaults via the `source` line above. Left in place; just unused now.
+
 ## Kitty terminal (`kitty/kitty.conf`)
 
 - Middle-click now pastes the system **clipboard** rather than the primary selection:
