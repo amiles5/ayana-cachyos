@@ -39,7 +39,7 @@ settings_show_advanced = true
 
     [shell.screenshot]
     copy_to_clipboard = false
-    pipe_command = "satty -f -"
+    pipe_command = "satty -f - -o ~/Pictures/Screenshots/%Y-%m-%d_%H-%M-%S.png"
     pipe_to_command = true
     save_to_file = false
 

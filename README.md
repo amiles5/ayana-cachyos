@@ -164,6 +164,20 @@ udev rule (`/usr/lib/udev/rules.d/20-asd-backlight.rules`, tags the display's
   blur, etc.) instead of saving straight to disk —
   `[shell.screenshot]` in `noctalia/config.toml`
   (`pipe_to_command = true`, `save_to_file = false`).
+- `satty`'s toolbar Save button is icon-only (no text label — a small
+  floppy-disk icon, tooltip "Save (Ctrl+S)" on hover), easy to miss,
+  especially at this display's 3.2x scale. `Ctrl+S` works regardless of
+  whether the icon is visible; `Ctrl+Shift+S` for Save As; `Ctrl+C` to copy
+  to clipboard without saving at all.
+- `pipe_command` now passes `-o ~/Pictures/Screenshots/%Y-%m-%d_%H-%M-%S.png`
+  (satty supports `~` and `strftime`-style format specifiers natively in
+  `-o`), so `Ctrl+S` saves straight to a timestamped file in
+  `~/Pictures/Screenshots/` instead of opening a file-picker dialog every
+  time (there was no `-o` before, so no default destination existed at all).
+  `Ctrl+Shift+S` still opens the picker if you want a different location for
+  a specific shot. Directory created (`~/Pictures/Screenshots`, empty,
+  `.gitignore`-less — new files inside it obviously aren't yadm-tracked, only
+  the empty dir would be were it in the tracked tree, which it isn't).
 - The `Print` key is dead on the current keyboard (Logitech MX Keys
   Mechanical): confirmed via `evtest` that no key/Fn-combo on it produces a
   `KEY_PRINT` (or `KEY_SYSRQ`) event, even though the device's HID descriptor
