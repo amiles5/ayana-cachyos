@@ -106,6 +106,30 @@ Source of truth is `binds.lua` itself — update this table when binds change.
   USB4/Thunderbolt tunnel has no pre-OS display capability on this SoC, so this only
   controls what happens once Hyprland has loaded, not what's on screen during boot itself.
 
+## Brightness — Apple Studio Display (`hypr/config/binds.lua`, `asdbctl`)
+
+The Studio Display doesn't support DDC/CI like a normal external monitor — Apple
+uses a proprietary HID protocol instead (confirmed: `ddcutil`/standard monitor
+brightness APIs don't see it). Controlled via
+[`asdbctl`](https://github.com/juliuszint/asdbctl), installed from the AUR
+(`asdbctl` package, maintainer `mipxx`) since no AUR helper (`paru`/`yay`) is on
+this system — built manually with `git clone
+https://aur.archlinux.org/asdbctl.git && cd asdbctl && makepkg -si`. Ships a
+udev rule (`/usr/lib/udev/rules.d/20-asd-backlight.rules`, tags the display's
+`hidraw` node `uaccess`) so it works as a regular user, no sudo/group needed.
+
+- `asdbctl get` / `asdbctl set <0-100>` / `asdbctl up` / `asdbctl down` (10%
+  steps by default, `-s`/`--step` to change).
+- Rebound `XF86MonBrightnessUp`/`XF86MonBrightnessDown` in `binds.lua` from
+  noctalia's `brightness-up`/`brightness-down` (which targets
+  `/sys/class/backlight`, empty on this machine — no internal panel, mini PC +
+  external display only, so those keys were a silent no-op) to `asdbctl up`/
+  `asdbctl down` directly.
+- Since it's an AUR package, it lands in `.pkglist/pacman-foreign-aur.txt`
+  (see "Package lists" section) rather than the plain pacman list — on a
+  reinstall it needs the manual `git clone` + `makepkg -si` above, not
+  `pacman -S`.
+
 ## Audio — Apple Studio Display over Thunderbolt
 
 Not a dotfile change, but a system fix worth recording: the display's audio/mic/webcam
@@ -520,9 +544,10 @@ Power button to Studio Display visible was measured at ~60s. Broken down with
   packages; excludes dependencies pulled in automatically). To restore on a
   fresh install: `sudo pacman -S --needed - < ~/.pkglist/pacman-explicit.txt`.
 - `pacman-foreign-aur.txt` — output of `pacman -Qqm` (foreign/AUR packages, i.e.
-  not from a configured repo). Currently empty — no AUR helper (`paru`/`yay`)
-  is installed and everything on this system comes from CachyOS/Arch repos.
-  Kept so it's not forgotten if that changes.
+  not from a configured repo). No AUR helper (`paru`/`yay`) is installed on
+  this system, so anything in this file (currently just `asdbctl` — see
+  "Brightness" section above) needs to be reinstalled manually on recovery:
+  `git clone https://aur.archlinux.org/<pkg>.git && cd <pkg> && makepkg -si`.
 - `flatpak.txt` — output of `flatpak list --app --columns=application`
   (currently just `com.rtosta.zapzap` — WhatsApp). Restore with
   `flatpak install flathub $(cat ~/.pkglist/flatpak.txt)`.

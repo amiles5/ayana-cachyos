@@ -146,8 +146,12 @@ hl.bind("XF86AudioNext",  hl.dsp.exec_cmd(noctCall .. "media next"),     { locke
 hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd(noctCall .. "media previous"), { locked = true })
 
 -- Brightness
-hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd(noctCall .. "brightness-up"),   { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(noctCall .. "brightness-down"), { locked = true, repeating = true })
+-- No internal backlight on this machine (mini PC + external display only), so
+-- noctalia's brightness-up/down (targets /sys/class/backlight, which is empty
+-- here) was a no-op. Studio Display brightness isn't DDC/CI-controllable -
+-- Apple uses a proprietary HID protocol instead - so we drive it via asdbctl.
+hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("asdbctl up"),   { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("asdbctl down"), { locked = true, repeating = true })
 
 -------------------
 ---- UTILITIES ----

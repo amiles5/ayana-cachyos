@@ -4,6 +4,7 @@ alsa-firmware
 alsa-plugins
 alsa-utils
 amd-ucode
+asdbctl
 awesome-terminal-fonts
 base
 base-devel
