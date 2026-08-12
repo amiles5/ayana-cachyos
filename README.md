@@ -47,12 +47,11 @@ etc.) are their unshifted form unless `SHIFT` is explicitly listed — e.g.
 | `SUPER + Return` | Kitty → workspace 1 |
 | `SUPER + E` | Dolphin (file manager) |
 | `SUPER + T` | gnome-text-editor |
-| `SUPER + C` / `XF86Calculator` | gnome-calculator |
+| `SUPER + SHIFT + C` / `XF86Calculator` | gnome-calculator |
 | `SUPER + SHIFT + Return` | Firefox → workspace 5 |
-| `SUPER + M` | ZapZap (WhatsApp) → workspace 2 |
-| `SUPER + SHIFT + M` | WhatsApp Web, Firefox PWA (for calls) → workspace 2 |
-| `SUPER + ALT + S` | Sonos, Firefox PWA |
-| `SUPER + ALT + P` | iCloud Photos, Flatpak |
+| `SUPER + SHIFT + M` | ZapZap (WhatsApp) → workspace 2 |
+| `SUPER + SHIFT + O` | Sonos, Firefox PWA |
+| `SUPER + SHIFT + P` | iCloud Photos, Flatpak |
 | `CONTROL + SHIFT + Escape` | kitty running btop |
 | `SUPER + Z` | Noctalia settings toggle |
 | `SUPER + X` | Noctalia control center |
@@ -207,6 +206,17 @@ Thunderbolt device is authorized.
 - `SUPER+SHIFT+Return` launches Firefox directly onto workspace 5: `[workspace 5] ... firefox`
   (this bind replaced the old `SUPER+W` Firefox launcher).
 
+### App-launch bind scheme
+
+App-launch binds were rationalized onto a uniform `SUPER + SHIFT + <key>` prefix
+(previously an inconsistent mix of plain `SUPER + <key>` and `SUPER + ALT + <key>`),
+**except** the three most-used ones — terminal (`SUPER+Return`), file manager
+(`SUPER+E`), editor (`SUPER+T`) — deliberately kept on their fast single-key
+binds rather than adding a keystroke to the most common actions. Current
+mapping: `SHIFT+C` calculator, `SHIFT+M` ZapZap, `SHIFT+O` Sonos, `SHIFT+P`
+iCloud Photos, `SHIFT+Return` Firefox. `O` (Sonos) was picked to dodge existing non-app binds on `S` — see the Sonos
+section below for specifics.
+
 ## Keyboard/workspace cycling (`hypr/config/binds.lua`)
 
 - `ALT+Tab` — native Hyprland window cycling within the current workspace, followed by
@@ -295,10 +305,12 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
 - Flatpak app data isn't yadm-tracked (same reasoning as ZapZap's `~/.var/app/...`
   exclusion) — nothing user-specific to track here anyway, install state lives in
   `.pkglist/flatpak.txt`.
-- Bound `SUPER + ALT + P` to Photos specifically (the exact `Exec=` line from
-  `io.github.TaylanTatli.iCloud-Linux.Photos.desktop`, no workspace targeting — same
-  pattern as Sonos above, since `SUPER + P` was already taken by hyprpicker). Verified
-  live: launches the "iCloud Photos" window correctly. No binds for the other services
+- Bound `SUPER + SHIFT + P` to Photos specifically (the exact `Exec=` line from
+  `io.github.TaylanTatli.iCloud-Linux.Photos.desktop`, no workspace targeting).
+  Originally `SUPER + ALT + P` since plain `SUPER + P` was already taken by
+  hyprpicker; moved to the `SUPER + SHIFT` scheme along with the rest of the
+  app-launch binds (see "App launch" section below). Verified live: launches the
+  "iCloud Photos" window correctly. No binds for the other services
   (Mail, Calendar, etc.) — launcher-only, same as before.
 - Not yet signed in — installed, launcher entries and the Photos keybind confirmed
   working, but the actual iCloud login flow hasn't been exercised yet.
@@ -325,35 +337,35 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
 
 ## WhatsApp (`hypr/config/binds.lua`)
 
-- No official WhatsApp Linux client exists. Installed **ZapZap**
+- No official WhatsApp Linux client exists. Using **ZapZap**
   (`com.rtosta.zapzap`, Flathub — GTK4/libadwaita wrapper around web.whatsapp.com,
-  built on QtWebEngine) as the primary chat app, bound to `SUPER + M` (opens on
+  built on QtWebEngine), bound to `SUPER + SHIFT + M` (opens on
   workspace 2, `flatpak run com.rtosta.zapzap`). ZapZap's flatpak data dir
   (`~/.var/app/com.rtosta.zapzap/`) is deliberately untracked in yadm, same
   reasoning as the Joplin exclusion above — live session/message data, not config.
 - ZapZap has no voice/video call button — a known upstream limitation, not
   something specific to this machine (see
   [rafatosta/zapzap#199](https://github.com/rafatosta/zapzap/issues/199) and
-  [#529](https://github.com/rafatosta/zapzap/issues/529)). Real WhatsApp Web does
-  support calls now, just not through ZapZap's QtWebEngine wrapper.
-- Fixed by installing WhatsApp Web as a second, separate **firefoxpwa** native app
-  (same tooling as the iCloud PWA above — full Firefox WebRTC, so calls work),
-  bound to `SUPER + SHIFT + M` (also workspace 2,
-  `firefoxpwa site launch 01KZQMBXYK6RHNHCWK5S1R1BRG`). Installed straight from
-  WhatsApp Web's real manifest (`https://web.whatsapp.com/data/manifest.json`) —
-  no manifest hand-writing/local HTTP server needed, unlike iCloud.
-- Net result: `SUPER + M` = ZapZap for regular chatting, `SUPER + SHIFT + M` =
-  WhatsApp (Firefox PWA) for voice/video calls.
+  [#529](https://github.com/rafatosta/zapzap/issues/529)).
+- Tried working around it with a second, separate **firefoxpwa** WhatsApp Web
+  install (same tooling as Sonos/iCloud, full Firefox WebRTC) specifically for
+  calls. Removed again (`firefoxpwa site uninstall` + `profile remove`, dedicated
+  profile) — video calling turned out not to work through it either, so it wasn't
+  solving the problem it was installed for. Just using ZapZap for everything now;
+  no video calling on this machine currently.
 
 ## Sonos (`hypr/config/binds.lua`)
 
 - Installed the Sonos web app (play.sonos.com) as a native firefoxpwa app, same
   pattern as iCloud/WhatsApp — real manifest at
   `https://play.sonos.com/manifest.webmanifest`, no hand-written manifest needed.
-- Bound to `SUPER + ALT + S` (`firefoxpwa site launch 01KZQREYPXKDBAHY9JWSG975VB`,
-  no workspace targeting). `SUPER + S` was already taken (scratchpad toggle,
-  `hl.dsp.workspace.toggle_special()`) — kept that bind as-is and used
-  `SUPER + ALT + S` instead rather than overriding it.
+- Bound to `SUPER + SHIFT + O` (`firefoxpwa site launch 01KZQREYPXKDBAHY9JWSG975VB`,
+  no workspace targeting). Originally `SUPER + ALT + S`, but both `SUPER + S`
+  (scratchpad toggle) and `SUPER + SHIFT + S` (move window to special workspace)
+  were already taken when the app-launch binds got rationalized onto a uniform
+  `SUPER + SHIFT + <key>` scheme — kept both of those as-is and used `O` instead
+  (loose mnemonic: s**O**nos) rather than displacing existing window-management
+  binds.
 
 ## Resume-from-suspend fixes (`hypr/config/variables.lua`, `hypr/scripts/resume-fix.sh`, systemd user service)
 

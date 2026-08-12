@@ -112,16 +112,17 @@ hl.bind(mainMod .. " + code:86", function() zoomfunction(0.3) end, { repeating =
 ---- LAUNCHER ----
 ------------------
 
+-- Kept on their fast single-key binds (most frequently used): terminal, file
+-- manager, editor. Everything else below rationalized onto SUPER+SHIFT+<key>.
 hl.bind(mainMod .. " + Return",     hl.dsp.exec_cmd("[workspace 1] " .. launchPrefix .. TERMINAL))
 hl.bind(mainMod .. " + E",          hl.dsp.exec_cmd(launchPrefix .. FILE_MANAGER))
 hl.bind(mainMod .. " + T",          hl.dsp.exec_cmd(launchPrefix .. EDITOR))
-hl.bind(mainMod .. " + C",          hl.dsp.exec_cmd(launchPrefix .. CALCULATOR))
+hl.bind(mainMod .. " + SHIFT + C",  hl.dsp.exec_cmd(launchPrefix .. CALCULATOR))
 hl.bind("XF86Calculator",           hl.dsp.exec_cmd(launchPrefix .. CALCULATOR))
 hl.bind(mainMod .. " + SHIFT + Return", hl.dsp.exec_cmd("[workspace 5] " .. launchPrefix .. BROWSER))
-hl.bind(mainMod .. " + M",          hl.dsp.exec_cmd("[workspace 2] " .. launchPrefix .. "flatpak run com.rtosta.zapzap"))
-hl.bind(mainMod .. " + SHIFT + M",  hl.dsp.exec_cmd("[workspace 2] " .. launchPrefix .. "firefoxpwa site launch 01KZQMBXYK6RHNHCWK5S1R1BRG"))
-hl.bind(mainMod .. " + ALT + S",    hl.dsp.exec_cmd(launchPrefix .. "firefoxpwa site launch 01KZQREYPXKDBAHY9JWSG975VB"))
-hl.bind(mainMod .. " + ALT + P",    hl.dsp.exec_cmd(launchPrefix .. "flatpak run --branch=master --arch=x86_64 --command=icloud-linux io.github.TaylanTatli.iCloud-Linux photos Photos"))
+hl.bind(mainMod .. " + SHIFT + M",  hl.dsp.exec_cmd("[workspace 2] " .. launchPrefix .. "flatpak run com.rtosta.zapzap"))
+hl.bind(mainMod .. " + SHIFT + O",  hl.dsp.exec_cmd(launchPrefix .. "firefoxpwa site launch 01KZQREYPXKDBAHY9JWSG975VB"))
+hl.bind(mainMod .. " + SHIFT + P",  hl.dsp.exec_cmd(launchPrefix .. "flatpak run --branch=master --arch=x86_64 --command=icloud-linux io.github.TaylanTatli.iCloud-Linux photos Photos"))
 hl.bind("CONTROL + SHIFT + Escape", hl.dsp.exec_cmd(launchPrefix .. TERMINAL .. " -e btop"))
 hl.bind(mainMod .. " + Z",          hl.dsp.exec_cmd(noctCall .. "settings-toggle"))
 hl.bind(mainMod .. " + X",          hl.dsp.exec_cmd(noctCall .. "panel-toggle control-center"))
