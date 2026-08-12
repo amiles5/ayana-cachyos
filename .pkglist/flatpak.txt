@@ -1,1 +1,2 @@
 com.rtosta.zapzap
+io.github.TaylanTatli.iCloud-Linux

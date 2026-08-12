@@ -272,7 +272,32 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
   physically there to wake and unlock it. Reverted back to `lock_and_suspend` shortly after —
   accepted the tradeoff deliberately rather than leaving it lock-only.
 
-## iCloud — removed
+## iCloud — [iCloud-Linux](https://github.com/TaylanTatli/iCloud-Linux) (Flatpak)
+
+- Third attempt at iCloud access, after the AUR Electron wrapper (dead end) and the
+  firefoxpwa version (worked, but later removed — see below) documented next. This one
+  is a **native** GTK4/Libadwaita app using WebKitGTK for rendering (C++, not Electron),
+  distributed only as a downloadable `.flatpak` bundle attached to GitHub releases — not
+  on Flathub, so `flatpak search`/`flatpak install <id>` won't find it.
+- Installed the release bundle directly:
+  `curl -fLO https://github.com/TaylanTatli/iCloud-Linux/releases/download/1.1.6/io.github.TaylanTatli.iCloud-Linux.flatpak`
+  then `sudo flatpak install --system io.github.TaylanTatli.iCloud-Linux.flatpak`
+  (system-wide, matching how ZapZap is installed). Pulled `org.gnome.Platform/x86_64/50`
+  as a runtime dependency from the existing `flathub` remote; no extra remote was added
+  for the app itself (bundle installs don't need one to keep working, only to auto-update
+  — reinstall the same way for updates).
+- Unlike the old firefoxpwa setup (one "iCloud" window for everything), this one exports
+  a **separate launcher entry per service** — Mail, Calendar, Photos, Drive, Notes,
+  Reminders, Contacts, Find, Pages, Numbers, Keynote — each its own
+  `io.github.TaylanTatli.iCloud-Linux.<Service>.desktop`, all showing up individually in
+  the noctalia app launcher (`SUPER + Space`). No dedicated keybind, same as before.
+- Flatpak app data isn't yadm-tracked (same reasoning as ZapZap's `~/.var/app/...`
+  exclusion) — nothing user-specific to track here anyway, install state lives in
+  `.pkglist/flatpak.txt`.
+- Not yet signed in/tested end-to-end — installed and launcher entries confirmed present,
+  actual iCloud login flow not exercised.
+
+### Earlier attempts (history)
 
 - No official iCloud Linux client exists. Tried the AUR `icloud-for-linux-git` package
   (unmaintained Electron wrapper around icloud.com, github.com/wmwnuk/icloud-for-linux,
