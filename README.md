@@ -542,6 +542,35 @@ the Linux equivalent of macOS's built-in text substitution.
   Killing it takes the worker process down with it (same PID owns the
   window), but the daemon auto-respawns a fresh worker immediately —
   confirmed via `espanso status` and `espanso match list` right after.
+  **Recurs on every worker restart**, not a one-off — confirmed by
+  triggering several restarts in a row, a fresh copy appeared every time.
+  If the window is reported as "not responding" (genuinely hung, not just
+  blank) and `window.kill()` doesn't close it, escalate to
+  `kill -9 <worker-pid>` directly (`pgrep -f "espanso worker"`) — this has
+  been needed at least once.
+  - **Don't rapid-fire kills.** Killing/restarting the worker several times
+    within a few seconds of each other left stale `.sock` files in
+    `~/.cache/espanso/` and pushed the worker into a *different*, more
+    serious crash (`received unexpected exit code from worker 90` — dying
+    during "Querying modifier status", never reaching the injector/clipboard
+    init, i.e. actual text expansion broken, not just the Sync Tool window).
+    Fixed by `systemctl --user stop espanso`, `rm
+    ~/.cache/espanso/*.{lock,sock}`, then one clean `start` left alone for
+    15+ seconds. If it recurs, that's the recovery sequence — one kill and
+    walk away, not repeated manual killing while debugging.
+  - **Tried and abandoned**: an `hl.on("window.open", ...)` event listener
+    in `windowrules.lua` to auto-kill the Sync Tool window the instant it
+    opens, so it'd never be visible at all. Actively harmful, not just
+    ineffective — reproducibly caused the exact worker-90 crash above (the
+    listener appears to interfere with some internal window-open event
+    espanso's own "Querying modifier status" step depends on). Confirmed by
+    disabling it and getting a clean, stable start immediately after;
+    reverted fully rather than leaving it disabled-but-present. A static
+    `hl.window_rule({ ..., close = true })` was tried first and is *not*
+    dangerous, just ineffective — Hyprland has no static "close" windowrule
+    action (`close`/`kill` are dispatchers only), so it silently does
+    nothing. Manual force-kill (single kill, not scripted/automatic) remains
+    the only safe approach found so far.
 
 ## Fish shell — `ls`/`la`/`ll`/`lt`/`l.` aliases (`fish/config.fish`)
 
