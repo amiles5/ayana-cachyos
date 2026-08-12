@@ -526,51 +526,46 @@ the Linux equivalent of macOS's built-in text substitution.
   it) — more useful than `journalctl --user -u espanso.service`, which only
   captures the `launcher` process's own start/stop, not the daemon/worker's
   actual output.
-- **Known upstream bug**: an empty/blank "Espanso Sync Tool" window (class-less,
-  `~1580x845` floating) can pop up unprompted — wxWidgets-on-Wayland rendering
-  issue, not specific to this machine
-  ([espanso/espanso#1976](https://github.com/espanso/espanso/issues/1976),
+- **Known upstream bug**: an empty/blank "Espanso Sync Tool" window (class-less)
+  can pop up unprompted — wxWidgets-on-Wayland rendering issue, not specific
+  to this machine ([espanso/espanso#1976](https://github.com/espanso/espanso/issues/1976),
   [#2156](https://github.com/espanso/espanso/issues/2156)). First seen right
   after setting `keyboard_layout` above — #1976 specifically notes layout
-  changes retrigger this tool. It's cosmetic (doesn't affect actual
-  expansion) but won't close normally; force-kill it:
-  ```
-  hyprctl clients -j | jq -r '.[] | select(.title=="Espanso Sync Tool") | .address'
-  hyprctl dispatch 'hl.dsp.focus({ window = "address:<addr>" })'
-  hyprctl dispatch 'hl.dsp.window.kill()'
-  ```
-  Killing it takes the worker process down with it (same PID owns the
-  window), but the daemon auto-respawns a fresh worker immediately —
-  confirmed via `espanso status` and `espanso match list` right after.
-  **Recurs on every worker restart**, not a one-off — confirmed by
-  triggering several restarts in a row, a fresh copy appeared every time.
-  If the window is reported as "not responding" (genuinely hung, not just
-  blank) and `window.kill()` doesn't close it, escalate to
-  `kill -9 <worker-pid>` directly (`pgrep -f "espanso worker"`) — this has
-  been needed at least once.
-  - **Don't rapid-fire kills.** Killing/restarting the worker several times
-    within a few seconds of each other left stale `.sock` files in
-    `~/.cache/espanso/` and pushed the worker into a *different*, more
-    serious crash (`received unexpected exit code from worker 90` — dying
-    during "Querying modifier status", never reaching the injector/clipboard
-    init, i.e. actual text expansion broken, not just the Sync Tool window).
-    Fixed by `systemctl --user stop espanso`, `rm
-    ~/.cache/espanso/*.{lock,sock}`, then one clean `start` left alone for
-    15+ seconds. If it recurs, that's the recovery sequence — one kill and
-    walk away, not repeated manual killing while debugging.
-  - **Tried and abandoned**: an `hl.on("window.open", ...)` event listener
-    in `windowrules.lua` to auto-kill the Sync Tool window the instant it
-    opens, so it'd never be visible at all. Actively harmful, not just
-    ineffective — reproducibly caused the exact worker-90 crash above (the
-    listener appears to interfere with some internal window-open event
-    espanso's own "Querying modifier status" step depends on). Confirmed by
-    disabling it and getting a clean, stable start immediately after;
-    reverted fully rather than leaving it disabled-but-present. A static
-    `hl.window_rule({ ..., close = true })` was tried first and is *not*
-    dangerous, just ineffective — Hyprland has no static "close" windowrule
-    action (`close`/`kill` are dispatchers only), so it silently does
-    nothing. Manual force-kill (single kill, not scripted/automatic) remains
-    the only safe approach found so far.
+  changes retrigger this tool. **Recurs on every worker restart**, not a
+  one-off (confirmed across several restarts in a row). Cosmetic — doesn't
+  affect actual expansion.
+- Fixed with a plain static rule in `windowrules.lua`
+  (`shrink-espanso-sync-tool`): `float = true` + `size = { "monitor_w*0.10",
+  "monitor_h*0.10" }`, matched by `title`. Shrinks it to a small (`160x90`
+  on this display), centered, floating window instead of a full
+  `1580x845` — out of the way, no longer disruptive. Verified live across a
+  fresh worker respawn.
+  - **Two other approaches were tried first and rejected**: a static
+    `hl.window_rule({ ..., close = true })` reloaded without error but did
+    nothing — Hyprland has no static "close" windowrule action (`close`/
+    `kill` are dispatchers only, not rule fields). An `hl.on("window.open",
+    ...)` event listener that force-killed the window the instant it opened
+    was worse than useless — it reproducibly *broke espanso itself* (worker
+    crash, exit code 90, dying during "Querying modifier status" before
+    ever reaching the injector/clipboard init — i.e. real functionality
+    lost, not just the cosmetic window). Confirmed by disabling it and
+    getting a clean, stable start immediately after; reverted fully rather
+    than leaving it disabled-but-present. The size/float rule that's in
+    place now is purely declarative (no event handling, no interaction with
+    espanso's own process), which is presumably why it doesn't have the
+    same problem.
+  - If the window is ever reported as genuinely "not responding" (not just
+    blank) and needs manually clearing: `hyprctl clients -j | jq -r '.[] |
+    select(.title=="Espanso Sync Tool") | .address'`, then
+    `hyprctl dispatch 'hl.dsp.focus({ window = "address:<addr>" })'`
+    followed by `hyprctl dispatch 'hl.dsp.window.kill()'` (escalate to
+    `kill -9 <worker-pid>`, from `pgrep -f "espanso worker"`, if that
+    doesn't close it). **Don't rapid-fire this** — killing/restarting the
+    worker repeatedly within a few seconds left stale `.sock` files in
+    `~/.cache/espanso/` and triggered the same worker-90 crash on its own.
+    Recovery: `systemctl --user stop espanso`, `rm
+    ~/.cache/espanso/*.{lock,sock}`, one clean `start`, then leave it alone
+    for 15+ seconds.
 
 ## Fish shell — `ls`/`la`/`ll`/`lt`/`l.` aliases (`fish/config.fish`)
 
