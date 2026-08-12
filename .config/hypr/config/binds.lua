@@ -152,6 +152,11 @@ hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd(noctCall .. "media previous"), { locke
 -- Apple uses a proprietary HID protocol instead - so we drive it via asdbctl.
 hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("asdbctl up"),   { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("asdbctl down"), { locked = true, repeating = true })
+-- The Logitech MX Keys Mechanical's F-row has no brightness function at all
+-- (lock/app-switcher/screenshot/media/volume instead), so the XF86 keys above
+-- are unreachable from this keyboard. SUPER+bracket as a reachable fallback.
+hl.bind(mainMod .. " + bracketleft",  hl.dsp.exec_cmd("asdbctl down"), { repeating = true })
+hl.bind(mainMod .. " + bracketright", hl.dsp.exec_cmd("asdbctl up"),   { repeating = true })
 
 -------------------
 ---- UTILITIES ----

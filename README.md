@@ -64,7 +64,8 @@ Source of truth is `binds.lua` itself — update this table when binds change.
 | `XF86AudioMicMute` | Mic mute |
 | `XF86AudioPlay` / `XF86AudioPause` | Media play/pause toggle |
 | `XF86AudioNext` / `XF86AudioPrev` | Media next/previous |
-| `XF86MonBrightnessUp` / `XF86MonBrightnessDown` | Brightness up/down |
+| `XF86MonBrightnessUp` / `XF86MonBrightnessDown` | Brightness up/down (see note below — unreachable on the current keyboard) |
+| `SUPER + bracketleft` / `SUPER + bracketright` | Brightness down/up (fallback, see below) |
 
 **Utilities**
 
@@ -125,6 +126,12 @@ udev rule (`/usr/lib/udev/rules.d/20-asd-backlight.rules`, tags the display's
   `/sys/class/backlight`, empty on this machine — no internal panel, mini PC +
   external display only, so those keys were a silent no-op) to `asdbctl up`/
   `asdbctl down` directly.
+- The keyboard in use (Logitech MX Keys Mechanical) has no dedicated
+  brightness function on its F-row at all — it's lock/app-switcher/
+  screenshot/media/volume instead — so those `XF86MonBrightness*` keys are
+  unreachable from this keyboard regardless of the Hyprland-side binding.
+  Added `SUPER + bracketleft` / `SUPER + bracketright` as a reachable
+  fallback bound to the same `asdbctl down`/`up` commands.
 - Since it's an AUR package, it lands in `.pkglist/pacman-foreign-aur.txt`
   (see "Package lists" section) rather than the plain pacman list — on a
   reinstall it needs the manual `git clone` + `makepkg -si` above, not
