@@ -16,6 +16,7 @@ bluez-libs
 bluez-obex
 bluez-utils
 bolt
+brlaser
 btop
 btrfs-assistant
 btrfs-progs
@@ -41,6 +42,9 @@ cantarell-fonts
 chwd
 cpupower
 cryptsetup
+cups
+cups-filters
+cups-pdf
 device-mapper
 diffutils
 dmidecode
@@ -62,6 +66,7 @@ firefox
 firefoxpwa
 flatpak
 fsarchiver
+ghostscript
 git
 glances
 gst-libav

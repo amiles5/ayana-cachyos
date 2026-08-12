@@ -359,6 +359,42 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
   detection logic was confirmed against a manual D-Bus test but not yet
   exercised by a real suspend cycle.
 
+## Printer — Brother HL-1210W (CUPS + `brlaser`)
+
+- Discovered on the LAN via `avahi-browse -a -t -r` (mDNS): `Brother HL-1210W
+  series` at `192.168.1.252` (`BRN106FD981C68E.local`), offering raw
+  JetDirect (port 9100), LPD (515), and IPP (631, `ipp/print`).
+- Installed `cups`, `cups-filters`, `ghostscript` (`cups-pdf` too, for an
+  optional "print to PDF" virtual printer — not the point of this exercise,
+  just came along with it), enabled `cups.service`.
+- The Brother-provided Linux drivers are proprietary/annoying to package, so
+  used [`brlaser`](https://github.com/Owl-Maintain/brlaser) instead — an open
+  source driver for Brother laser printers. Installed from the AUR
+  (`brlaser` package) the same way as `asdbctl`: no AUR helper on this
+  system, so `git clone https://aur.archlinux.org/brlaser.git && cd brlaser
+  && makepkg -si`.
+- `brlaser` ships an exact PPD for this model: `lpinfo -m | grep brlaser`
+  lists `drv:///brlaser.drv/br1210.ppd` → "Brother HL-1210W series". Added
+  the printer with that PPD over IPP:
+  `lpadmin -p Brother_HL1210W -E -v ipp://192.168.1.252/ipp/print -m
+  drv:///brlaser.drv/br1210.ppd`, set as the system default (only printer on
+  this machine). Confirmed reachable: both port 9100 and 631 connect, and
+  the PPD's options (A4, 600dpi/1200x600dpi, toner economode/density) loaded
+  correctly via `lpoptions -p Brother_HL1210W -l` — an actual test page
+  wasn't sent (uses real paper/toner), so end-to-end printing itself is
+  unverified.
+- `lpadmin` warned "Printer drivers are deprecated and will stop working in
+  a future version of CUPS" — expected for any PPD-based setup like this one
+  (CUPS is pushing toward driverless IPP Everywhere); not an error, `brlaser`
+  is still the correct choice since this printer's built-in IPP support may
+  not be full IPP Everywhere-compliant.
+- CUPS config (`/etc/cups/*`) is outside `$HOME`, so none of this is
+  yadm-tracked — noted here, and in "This repo" below, so it's not forgotten
+  on a reinstall. `cups`, `cups-filters`, `cups-pdf`, `ghostscript`, and
+  `brlaser` are captured in `.pkglist/` instead (`brlaser` lands in the
+  foreign/AUR list, needs the manual `git clone` + `makepkg -si` above to
+  restore).
+
 ## Fish shell — `ls`/`la`/`ll`/`lt`/`l.` aliases (`fish/config.fish`)
 
 - `config.fish` sources CachyOS's `/usr/share/cachyos-fish-config/cachyos-config.fish`
@@ -642,4 +678,7 @@ Power button to Studio Display visible was measured at ~60s. Broken down with
   plain `hyprland`) via `journalctl -u sddm`, matching what SDDM actually launches.
 - `/boot/limine.conf` (`timeout: 2`) is also outside `$HOME` — same reasoning as the SDDM
   autologin config above. Backup at `/boot/limine.conf.bak`.
+- `/etc/cups/*` (printer queue config, added by `lpadmin` for the Brother
+  HL-1210W — see "Printer" section above) is outside `$HOME` too. Not backed
+  up anywhere; recreate with the `lpadmin` command in that section if lost.
 - Pushed to `git@github.com:amiles5/ayana-cachyos.git` (branch `master`).
