@@ -52,6 +52,7 @@ etc.) are their unshifted form unless `SHIFT` is explicitly listed — e.g.
 | `SUPER + M` | ZapZap (WhatsApp) → workspace 2 |
 | `SUPER + SHIFT + M` | WhatsApp Web, Firefox PWA (for calls) → workspace 2 |
 | `SUPER + ALT + S` | Sonos, Firefox PWA |
+| `SUPER + ALT + P` | iCloud Photos, Flatpak |
 | `CONTROL + SHIFT + Escape` | kitty running btop |
 | `SUPER + Z` | Noctalia settings toggle |
 | `SUPER + X` | Noctalia control center |
@@ -294,8 +295,13 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
 - Flatpak app data isn't yadm-tracked (same reasoning as ZapZap's `~/.var/app/...`
   exclusion) — nothing user-specific to track here anyway, install state lives in
   `.pkglist/flatpak.txt`.
-- Not yet signed in/tested end-to-end — installed and launcher entries confirmed present,
-  actual iCloud login flow not exercised.
+- Bound `SUPER + ALT + P` to Photos specifically (the exact `Exec=` line from
+  `io.github.TaylanTatli.iCloud-Linux.Photos.desktop`, no workspace targeting — same
+  pattern as Sonos above, since `SUPER + P` was already taken by hyprpicker). Verified
+  live: launches the "iCloud Photos" window correctly. No binds for the other services
+  (Mail, Calendar, etc.) — launcher-only, same as before.
+- Not yet signed in — installed, launcher entries and the Photos keybind confirmed
+  working, but the actual iCloud login flow hasn't been exercised yet.
 
 ### Earlier attempts (history)
 
