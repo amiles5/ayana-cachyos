@@ -133,7 +133,8 @@ udev rule (`/usr/lib/udev/rules.d/20-asd-backlight.rules`, tags the display's
   Added `SUPER + bracketleft`/`bracketright` as a reachable fallback.
 - Also tried repurposing the keyboard's dedicated *illumination* up/down key
   as `SUPER + XF86KbdBrightnessUp`/`Down`. Didn't work — root-caused via
-  `evtest` (installed for this) on every input node the USB receiver exposes
+  `evtest` (installed to diagnose this, then removed again) on every input
+  node the USB receiver exposes
   (`event9` main keyboard, `event11` Consumer Control, `event12` System
   Control): pressing the key produces **zero** kernel input events on any of
   them, confirming it's handled entirely in the keyboard's own firmware and

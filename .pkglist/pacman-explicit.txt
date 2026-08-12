@@ -53,7 +53,6 @@ e2fsprogs
 efibootmgr
 efitools
 ethtool
-evtest
 ex-vi-compat
 exfatprogs
 f2fs-tools
