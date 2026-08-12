@@ -149,14 +149,23 @@ hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd(noctCall .. "media previous"), { locke
 -- No internal backlight on this machine (mini PC + external display only), so
 -- noctalia's brightness-up/down (targets /sys/class/backlight, which is empty
 -- here) was a no-op. Studio Display brightness isn't DDC/CI-controllable -
--- Apple uses a proprietary HID protocol instead - so we drive it via asdbctl.
-hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("asdbctl up"),   { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("asdbctl down"), { locked = true, repeating = true })
--- The Logitech MX Keys Mechanical's F-row has no brightness function at all
--- (lock/app-switcher/screenshot/media/volume instead), so the XF86 keys above
--- are unreachable from this keyboard. SUPER+bracket as a reachable fallback.
-hl.bind(mainMod .. " + bracketleft",  hl.dsp.exec_cmd("asdbctl down"), { repeating = true })
-hl.bind(mainMod .. " + bracketright", hl.dsp.exec_cmd("asdbctl up"),   { repeating = true })
+-- Apple uses a proprietary HID protocol instead - so we drive it via asdbctl,
+-- then push the resulting % to noctalia's OSD (brightness-osd only displays,
+-- it doesn't itself change anything) so a brightness change is still visible
+-- on screen the way volume/mic changes are.
+local brightnessUpCmd   = "asdbctl up && noctalia msg brightness-osd $(asdbctl get | awk '{print $2}')"
+local brightnessDownCmd = "asdbctl down && noctalia msg brightness-osd $(asdbctl get | awk '{print $2}')"
+hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd(brightnessUpCmd),   { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(brightnessDownCmd), { locked = true, repeating = true })
+-- The Logitech MX Keys Mechanical's F-row has no display-brightness function
+-- at all (lock/app-switcher/screenshot/media/volume instead), so the XF86
+-- keys above are unreachable from this keyboard - it only has a dedicated
+-- *keyboard illumination* up/down key (XF86KbdBrightnessUp/Down), which by
+-- default controls the keyboard's own backlight. Repurposed with SUPER held
+-- to control the Studio Display instead; unmodified press still does the
+-- keyboard's own backlight as normal.
+hl.bind(mainMod .. " + XF86KbdBrightnessDown", hl.dsp.exec_cmd(brightnessDownCmd), { repeating = true })
+hl.bind(mainMod .. " + XF86KbdBrightnessUp",   hl.dsp.exec_cmd(brightnessUpCmd),   { repeating = true })
 
 -------------------
 ---- UTILITIES ----

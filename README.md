@@ -65,7 +65,7 @@ Source of truth is `binds.lua` itself — update this table when binds change.
 | `XF86AudioPlay` / `XF86AudioPause` | Media play/pause toggle |
 | `XF86AudioNext` / `XF86AudioPrev` | Media next/previous |
 | `XF86MonBrightnessUp` / `XF86MonBrightnessDown` | Brightness up/down (see note below — unreachable on the current keyboard) |
-| `SUPER + bracketleft` / `SUPER + bracketright` | Brightness down/up (fallback, see below) |
+| `SUPER + XF86KbdBrightnessDown` / `SUPER + XF86KbdBrightnessUp` | Brightness down/up (see note below) |
 
 **Utilities**
 
@@ -127,11 +127,19 @@ udev rule (`/usr/lib/udev/rules.d/20-asd-backlight.rules`, tags the display's
   external display only, so those keys were a silent no-op) to `asdbctl up`/
   `asdbctl down` directly.
 - The keyboard in use (Logitech MX Keys Mechanical) has no dedicated
-  brightness function on its F-row at all — it's lock/app-switcher/
+  display-brightness function on its F-row at all — it's lock/app-switcher/
   screenshot/media/volume instead — so those `XF86MonBrightness*` keys are
-  unreachable from this keyboard regardless of the Hyprland-side binding.
-  Added `SUPER + bracketleft` / `SUPER + bracketright` as a reachable
-  fallback bound to the same `asdbctl down`/`up` commands.
+  unreachable from this keyboard regardless of the Hyprland-side binding. It
+  does have a dedicated *keyboard illumination* up/down key
+  (`XF86KbdBrightnessUp`/`Down`), which normally controls the keyboard's own
+  backlight. Bound `SUPER + XF86KbdBrightnessUp`/`Down` to Studio Display
+  brightness instead — held with SUPER it drives `asdbctl`, unmodified it
+  still does the keyboard's own backlight as before. (An earlier
+  `SUPER + bracketleft`/`bracketright` fallback was superseded by this and
+  removed.)
+- Both bindings now also call `noctalia msg brightness-osd <value>` after
+  each change (fetching the new % from `asdbctl get`) so the change shows an
+  on-screen OSD, same as volume/mic — `asdbctl` alone has no visual feedback.
 - Since it's an AUR package, it lands in `.pkglist/pacman-foreign-aur.txt`
   (see "Package lists" section) rather than the plain pacman list — on a
   reinstall it needs the manual `git clone` + `makepkg -si` above, not
