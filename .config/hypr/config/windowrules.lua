@@ -108,10 +108,11 @@ hl.window_rule({
 -- static size/float rule, not an event listener - shrinks it out of the way
 -- instead of trying to touch it programmatically.
 hl.window_rule({
-    name  = "shrink-espanso-sync-tool",
-    match = { title = "^(Espanso Sync Tool)$" },
-    float = true,
-    size  = { "monitor_w*0.10", "monitor_h*0.10" },
+    name      = "shrink-espanso-sync-tool",
+    match     = { title = "^(Espanso Sync Tool)$" },
+    float     = true,
+    size      = { "monitor_w*0.10", "monitor_h*0.10" },
+    workspace = "6",
 })
 
 -- Fix some dragging issues with XWayland
