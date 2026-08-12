@@ -476,6 +476,57 @@ these three changes:
 - UFW rules (`/etc/ufw/*`) are outside `$HOME` too — not yadm-tracked, noted
   here and in "This repo" below. To recreate: the `ufw allow` command above.
 
+## Text expansion — [espanso](https://espanso.org) (`espanso/`, systemd user service)
+
+Global text-replacement (type `ema`, get `anthony.miles@gmail.com` anywhere) —
+the Linux equivalent of macOS's built-in text substitution.
+
+- No official Arch package; X11-only tools like AutoKey don't work at all under
+  Wayland/Hyprland, and the mainline `espanso` AUR package isn't built with
+  Wayland support. Installed the Wayland-specific AUR build instead:
+  `git clone https://aur.archlinux.org/espanso-wayland.git && cd
+  espanso-wayland && makepkg -si` (same manual pattern as `asdbctl`/`brlaser`
+  — no AUR helper on this system). Version 2.2.1, pulls `wxwidgets-gtk3` etc.
+  as build deps; `cargo`/`rustc` were already present from earlier builds.
+- Config lives at `~/.config/espanso/` — `config/default.yml` (global
+  settings) and `match/base.yml` (the actual trigger → replacement rules).
+  Neither is auto-created by installation; had to `mkdir -p
+  ~/.config/espanso/{config,match}` and hand-write both files before the
+  daemon would start at all (it fails immediately with `[ERROR] unable to
+  load config / Caused by: missing config directory` otherwise — this isn't
+  documented anywhere obvious, tracked down by running the hidden `espanso
+  daemon` subcommand directly and, when that also failed silently, capturing
+  a screenshot of the GUI "Troubleshooting" window it spawns on error, which
+  states the real cause plainly).
+- Registered as a systemd user service (`espanso service register` — creates
+  `~/.config/systemd/user/espanso.service`, `ExecStart=/usr/bin/espanso
+  launcher`, enabled via `default.target`).
+- **Keyboard layout bug**: first real test expanded `ema` to
+  `anthony.miles"gmail.com` — `"` instead of `@`. Root cause was in the
+  worker log the whole time: `unable to determine keyboard layout
+  automatically, please explicitly specify it in the configuration` — on
+  Wayland espanso can't reliably auto-detect the active XKB layout, so its
+  EVDEV injector defaulted to US, and `@`/`"` are swapped between US and GB
+  layouts at the same physical key. Fixed with an explicit
+  `keyboard_layout: { layout: "gb" }` in `config/default.yml` (matches
+  `hypr/config/inputs.lua`'s `kb_layout = "gb"`) — confirmed in the log
+  afterward: `inject module will use this keyboard layout: [... L=gb ...]`.
+- **Red herring during setup**: the daemon appeared to be repeatedly SIGKILLed
+  a few seconds after every start (`systemd[860]: espanso.service: Main
+  process exited, code=killed, status=9/KILL`), which looked like a
+  Hyprland/Wayland compatibility crash (a real, since-fixed one exists
+  upstream — [espanso/espanso#1768](https://github.com/espanso/espanso/issues/1768),
+  fixed in 2.2.0, already included in this build's 2.2.1). Turned out to be
+  self-inflicted: `pkill -9 -f espanso`, run repeatedly while debugging to
+  clear stray manually-started test processes, matches *any* process with
+  "espanso" in its command line — including the systemd-managed worker
+  running in parallel. Stopped interleaving manual kills with the
+  systemd-managed instance and it ran stably from the first clean restart.
+- `~/.cache/espanso/espanso.log` is the real log (`espanso log` just tails
+  it) — more useful than `journalctl --user -u espanso.service`, which only
+  captures the `launcher` process's own start/stop, not the daemon/worker's
+  actual output.
+
 ## Fish shell — `ls`/`la`/`ll`/`lt`/`l.` aliases (`fish/config.fish`)
 
 - `config.fish` sources CachyOS's `/usr/share/cachyos-fish-config/cachyos-config.fish`
