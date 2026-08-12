@@ -536,10 +536,17 @@ the Linux equivalent of macOS's built-in text substitution.
   affect actual expansion.
 - Fixed with a plain static rule in `windowrules.lua`
   (`shrink-espanso-sync-tool`): `float = true` + `size = { "monitor_w*0.10",
-  "monitor_h*0.10" }` + `workspace = "6"`, matched by `title`. Shrinks it to
-  a small (`160x90` on this display), floating window tucked away on
-  workspace 6 instead of a full `1580x845` on whatever workspace happens to
-  be active — out of the way, no longer disruptive. Verified live across a
+  "monitor_h*0.10" }` + `workspace = "6 silent"` + `no_focus = true`, matched
+  by `title`. Shrinks it to a small (`160x90` on this display), floating
+  window tucked away on workspace 6 instead of a full `1580x845` on whatever
+  workspace happens to be active. `no_focus` alone didn't stop it from
+  switching the *visible* workspace to 6 (it only blocks keyboard focus,
+  not the workspace jump) — needed Hyprland's native `silent` modifier on
+  the `workspace` value too (`"6 silent"`, not just `"6"`) to keep the
+  currently active workspace from changing at all. Verified live: restarted
+  espanso from workspace 1, stayed on workspace 1 throughout, the Sync Tool
+  window appeared on workspace 6 without ever being seen. Out of the way,
+  no longer disruptive, and confirmed across a
   fresh worker respawn.
   - **Two other approaches were tried first and rejected**: a static
     `hl.window_rule({ ..., close = true })` reloaded without error but did

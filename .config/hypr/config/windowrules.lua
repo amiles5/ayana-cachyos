@@ -112,7 +112,8 @@ hl.window_rule({
     match     = { title = "^(Espanso Sync Tool)$" },
     float     = true,
     size      = { "monitor_w*0.10", "monitor_h*0.10" },
-    workspace = "6",
+    workspace = "6 silent",
+    no_focus  = true,
 })
 
 -- Fix some dragging issues with XWayland
