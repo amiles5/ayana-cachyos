@@ -1,3 +1,2 @@
 asdbctl
 brlaser
-espanso-wayland

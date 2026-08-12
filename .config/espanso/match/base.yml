@@ -1,5 +1,0 @@
-# espanso match file (base/default, loaded everywhere). See
-# https://espanso.org/docs/matches/basics/ for the full match syntax.
-matches:
-  - trigger: "ema"
-    replace: "anthony.miles@gmail.com"

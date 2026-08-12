@@ -101,21 +101,6 @@ hl.window_rule({
     suppress_event = "maximize",
 })
 
--- Espanso's "Sync Tool" window is a known upstream bug on Wayland (blank/
--- unresponsive rendering, recurs on every worker restart - see README "Text
--- expansion" section for the full story, including an auto-kill approach
--- that was tried and reverted for actively breaking espanso). This is just a
--- static size/float rule, not an event listener - shrinks it out of the way
--- instead of trying to touch it programmatically.
-hl.window_rule({
-    name      = "shrink-espanso-sync-tool",
-    match     = { title = "^(Espanso Sync Tool)$" },
-    float     = true,
-    size      = { "monitor_w*0.10", "monitor_h*0.10" },
-    workspace = "6 silent",
-    no_focus  = true,
-})
-
 -- Fix some dragging issues with XWayland
 hl.window_rule({
     name  = "fix-xwayland-drags",
