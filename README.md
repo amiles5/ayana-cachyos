@@ -514,11 +514,29 @@ Power button to Studio Display visible was measured at ~60s. Broken down with
   + 9.5s userspace), almost entirely from the Limine timeout cut — the initrd hang is
   unchanged and understood to be structural, not a regression from anything in this repo.
 
+## Package lists (`.pkglist/`) — system recovery
+
+- `pacman-explicit.txt` — output of `pacman -Qqe` (explicitly installed native
+  packages; excludes dependencies pulled in automatically). To restore on a
+  fresh install: `sudo pacman -S --needed - < ~/.pkglist/pacman-explicit.txt`.
+- `pacman-foreign-aur.txt` — output of `pacman -Qqm` (foreign/AUR packages, i.e.
+  not from a configured repo). Currently empty — no AUR helper (`paru`/`yay`)
+  is installed and everything on this system comes from CachyOS/Arch repos.
+  Kept so it's not forgotten if that changes.
+- `flatpak.txt` — output of `flatpak list --app --columns=application`
+  (currently just `com.rtosta.zapzap` — WhatsApp). Restore with
+  `flatpak install flathub $(cat ~/.pkglist/flatpak.txt)`.
+- `update.sh` — regenerates all three files from current system state. Run it
+  after installing/removing packages, then `yadm add .pkglist` + commit + push
+  to keep the recovery list current. Not run automatically (no hook) — it's a
+  manual step, easy to forget after an ad-hoc `pacman -S`.
+
 ## This repo
 
 - Tracked: `hypr`, `kitty`, `fish`, `fastfetch`, `noctalia`, `alacritty`, `btop`,
   GTK3/4 & Qt5/6ct theming, `dolphinrc`/`kdeglobals`, `micro` (`settings.json` +
-  colorschemes only), and assorted XDG files (`mimeapps.list`, `user-dirs.*`, etc).
+  colorschemes only), assorted XDG files (`mimeapps.list`, `user-dirs.*`, etc), and
+  `.pkglist` (package lists for recovery — see "Package lists" section below).
 - Deliberately excluded: `.config/mozilla` (191MB Firefox profile — history/cookies/saved
   logins), `.config/pulse` and `.config/dconf` (small binary runtime state, not really
   "config"), micro's 146 bundled default syntax-highlighting files (not user-authored),
