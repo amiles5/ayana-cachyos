@@ -49,7 +49,7 @@ etc.) are their unshifted form unless `SHIFT` is explicitly listed — e.g.
 | `SUPER + T` | gnome-text-editor |
 | `SUPER + SHIFT + C` / `XF86Calculator` | gnome-calculator |
 | `SUPER + SHIFT + Return` | Firefox → workspace 5 |
-| `SUPER + SHIFT + M` | ZapZap (WhatsApp) → workspace 2 |
+| `SUPER + SHIFT + M` | ZapZap (WhatsApp) |
 | `SUPER + SHIFT + O` | Sonos, Firefox PWA |
 | `SUPER + SHIFT + P` | iCloud Photos, Flatpak |
 | `CONTROL + SHIFT + Escape` | kitty running btop |
@@ -339,8 +339,10 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
 
 - No official WhatsApp Linux client exists. Using **ZapZap**
   (`com.rtosta.zapzap`, Flathub — GTK4/libadwaita wrapper around web.whatsapp.com,
-  built on QtWebEngine), bound to `SUPER + SHIFT + M` (opens on
-  workspace 2, `flatpak run com.rtosta.zapzap`). ZapZap's flatpak data dir
+  built on QtWebEngine), bound to `SUPER + SHIFT + M`
+  (`flatpak run com.rtosta.zapzap`, opens on the current workspace — the
+  `[workspace 2]` targeting it originally launched onto was removed).
+  ZapZap's flatpak data dir
   (`~/.var/app/com.rtosta.zapzap/`) is deliberately untracked in yadm, same
   reasoning as the Joplin exclusion above — live session/message data, not config.
 - ZapZap has no voice/video call button — a known upstream limitation, not
