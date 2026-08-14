@@ -4,6 +4,7 @@ alsa-firmware
 alsa-plugins
 alsa-utils
 amd-ucode
+anydesk-bin
 asdbctl
 awesome-terminal-fonts
 base
@@ -68,6 +69,7 @@ flatpak
 fsarchiver
 ghostscript
 git
+github-cli
 glances
 gst-libav
 gst-plugin-pipewire

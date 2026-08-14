@@ -1,2 +1,3 @@
+anydesk-bin
 asdbctl
 brlaser
