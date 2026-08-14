@@ -48,9 +48,10 @@ hl.window_rule({
 -- Auto-assigned workspaces (workspaces 1-5 mirror amiles5/aerospace-config's
 -- on-window-detected rules; macOS-only apps with no Linux equivalent - Finder,
 -- FaceTime, Moneydance, System Preferences, Logi Options+ - are not present
--- here since they're not installed. Workspace 6 (Sonos) is Linux-only.)
+-- here since they're not installed. Workspace 2 (WhatsApp) and workspace 6
+-- (Sonos) are Firefox PWAs, Linux-only.)
 hl.window_rule({ match = { class = "^(kitty)$" },                                          workspace = "1" })
-hl.window_rule({ match = { class = "^(com\\.rtosta\\.zapzap)$" },                          workspace = "2" })
+hl.window_rule({ match = { class = "^(FFPWA-01M00K4G8CW4N60N8Q6G1BF8QB)$" },               workspace = "2" })
 hl.window_rule({ match = { class = "^(io\\.github\\.TaylanTatli\\.iCloud-Linux\\.Photos)$" }, workspace = "3" })
 hl.window_rule({ match = { class = "^(joplin-app-desktop)$" },                             workspace = "4" })
 hl.window_rule({ match = { class = "^(firefox|zen)$" },                                    workspace = "5" })
