@@ -45,6 +45,14 @@ hl.window_rule({
     workspace        = gamingWorkspace,
 })
 
+-- Auto-assigned workspaces (mirrors amiles5/aerospace-config's on-window-detected rules;
+-- macOS-only apps with no Linux equivalent - Finder, FaceTime, Moneydance, Joplin,
+-- System Preferences, Logi Options+ - are not present here since they're not installed)
+hl.window_rule({ match = { class = "^(kitty)$" },                                          workspace = "1" })
+hl.window_rule({ match = { class = "^(com\\.rtosta\\.zapzap)$" },                          workspace = "2" })
+hl.window_rule({ match = { class = "^(io\\.github\\.TaylanTatli\\.iCloud-Linux\\.Photos)$" }, workspace = "3" })
+hl.window_rule({ match = { class = "^(firefox|zen)$" },                                    workspace = "5" })
+
 -- Apps
 hl.window_rule({ match = { class = "^(.*\\.exe)$", float = true }, monitor = PRIMARY_MONITOR, center = true, fullscreen_state = 0 })
 hl.window_rule({ match = { class = "^(.*[Ll]auncher.*)$" }, float = true, monitor = PRIMARY_MONITOR })
