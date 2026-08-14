@@ -525,6 +525,34 @@ these three changes:
   reachable at `/run/user/1000/ssh-agent.socket`.
 - Loaded the `id_ed25519` key into that agent (verified against GitHub as `amiles5`).
 
+## GitHub authentication — `gh` token over HTTPS (not SSH key)
+
+Switched from the SSH key (`id_ed25519`, passphrase-protected, required
+`SSH_AUTH_SOCK`/`GIT_SSH_COMMAND` on every push) to a GitHub CLI-managed
+token over HTTPS.
+
+- Installed `github-cli` (`gh`), then ran `gh auth login` interactively
+  (device/browser flow — GitHub.com, HTTPS, "Login with a web browser",
+  answered "Yes" to "Authenticate Git with your GitHub credentials?"). This
+  step needs a real browser login and can't be scripted/run non-interactively.
+- `gh` stored the OAuth token at `~/.config/gh/hosts.yml` and registered
+  itself as git's credential helper for `github.com`/`gist.github.com` in
+  `~/.gitconfig`: `credential."https://github.com".helper = !/usr/bin/gh
+  auth git-credential`.
+- Switched the yadm remote from `git@github.com:...` to
+  `https://github.com/amiles5/ayana-cachyos.git` (`yadm remote set-url
+  origin ...`) so it picks up that credential helper.
+- Result: plain `yadm push`/`yadm fetch` work with no env var prefix and no
+  passphrase prompt — verified with a live fetch + push round trip.
+- **Not yadm-tracked** (secrets/host-specific): `~/.config/gh/hosts.yml`
+  (the token itself) and the `credential.helper` lines in `~/.gitconfig`
+  (`.gitconfig` isn't tracked at all). To recover on a fresh machine:
+  install `github-cli`, run `gh auth login` again (repeats the browser
+  flow above), then re-point the yadm remote to the HTTPS URL as above —
+  `gh auth login` sets up the credential helper automatically.
+- The old SSH key/agent setup above is left in place, untouched, as a
+  fallback — nothing was deleted.
+
 ## Hardware — Minisforum mini PC BIOS (blank screen on boot / Studio Display replug)
 
 Not a dotfile change, but recorded here for reference since it took real investigation.
@@ -765,4 +793,6 @@ Power button to Studio Display visible was measured at ~60s. Broken down with
   (the LAN-scoped port-631 rule) are outside `$HOME` too — see "Printer"
   section above for the exact commands to recreate both if lost.
   `cupsd.conf.bak` is the only backup; the rest isn't backed up anywhere.
-- Pushed to `git@github.com:amiles5/ayana-cachyos.git` (branch `master`).
+- Pushed to `https://github.com/amiles5/ayana-cachyos.git` (branch `master`)
+  — HTTPS + `gh`-managed token, see "GitHub authentication" section above
+  (was `git@github.com:...` SSH remote until this was switched over).
