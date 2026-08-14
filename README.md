@@ -200,6 +200,20 @@ Thunderbolt device is authorized.
 - The NixOS install on the same physical machine (separate SSD) will need the same fix —
   not yet done, pending an SSD swap to boot into it.
 
+### Camera & mic access verified
+
+- Camera: detected via the standard `uvcvideo` driver (no proprietary driver
+  needed) as `Studio Display: Studio Display`, exposing `/dev/video0` (main,
+  1664x1248 MJPEG) and `/dev/video1` (metadata). User is already in the
+  `video` group, so apps (browser, video-call clients, etc.) get access with
+  no extra setup. Verified live by capturing an actual frame with `ffmpeg`.
+- Mic: detected via `snd_usb_audio` as PipeWire source
+  `alsa_input...Studio_Display...mono-fallback` ("Studio Display Mono"),
+  mic port active. Verified live with a short `parec` recording — measured
+  mean -38 dB / peak -24.8 dB (real ambient signal, not silence).
+- Both test captures were deleted immediately after verification (a photo/
+  audio of the room, not something worth keeping around).
+
 ## App launch → workspace targeting (`hypr/config/binds.lua`)
 
 - `SUPER+Return` launches kitty directly onto workspace 1: `[workspace 1] ... kitty`.
