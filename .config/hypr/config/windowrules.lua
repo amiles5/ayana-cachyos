@@ -46,11 +46,12 @@ hl.window_rule({
 })
 
 -- Auto-assigned workspaces (mirrors amiles5/aerospace-config's on-window-detected rules;
--- macOS-only apps with no Linux equivalent - Finder, FaceTime, Moneydance, Joplin,
+-- macOS-only apps with no Linux equivalent - Finder, FaceTime, Moneydance,
 -- System Preferences, Logi Options+ - are not present here since they're not installed)
 hl.window_rule({ match = { class = "^(kitty)$" },                                          workspace = "1" })
 hl.window_rule({ match = { class = "^(com\\.rtosta\\.zapzap)$" },                          workspace = "2" })
 hl.window_rule({ match = { class = "^(io\\.github\\.TaylanTatli\\.iCloud-Linux\\.Photos)$" }, workspace = "3" })
+hl.window_rule({ match = { class = "^(joplin-app-desktop)$" },                             workspace = "4" })
 hl.window_rule({ match = { class = "^(firefox|zen)$" },                                    workspace = "5" })
 
 -- Apps
