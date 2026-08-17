@@ -4,7 +4,7 @@ ui_scale = 1.20
 [bar.default]
 center = [ "workspaces", "spacer_1", "clock", "spacer_2", "weather" ]
 concave_edge_corners = true
-end = [ "media", "spacer_1", "tray", "notifications", "network", "volume", "session" ]
+end = [ "tray", "group:g2", "network", "volume", "spacer_1", "control-center", "session" ]
 margin_edge = 0
 margin_ends = 0
 radius_bottom_left = 12
@@ -20,6 +20,13 @@ thickness = 35
     fill = "on_secondary"
     id = "g1"
     members = [ "temp", "sysmon_2", "sysmon_3" ]
+    opacity = 1.0
+    padding = 6.0
+
+    [[bar.default.capsule_group]]
+    fill = "surface_variant"
+    id = "g2"
+    members = [ "notifications" ]
     opacity = 1.0
     padding = 6.0
 
@@ -83,6 +90,9 @@ timeout = 3600
 action = "lock_and_suspend"
 enabled = true
 
+[nightlight]
+enabled = true
+
 [system.monitor]
 gpu_poll_seconds = 2
 
@@ -94,9 +104,31 @@ wallpaper_scheme = "m3-tonal-spot"
     [theme.templates]
     builtin_ids = [ "btop", "gtk3", "gtk4", "kcolorscheme", "kitty", "qt", "alacritty" ]
 
+[wallpaper]
+directory = "/home/milesj/Pictures/wallpapers"
+
+    [wallpaper.automation]
+    enabled = true
+    interval_seconds = 120
+
+    # DP-2 (ayana's Studio Display) isn't pinned here: automation cycles it
+    # every interval, so wallpaper.default/last/monitors.DP-2 in the live
+    # state file are ephemeral and not meaningful to track.
+    [wallpaper.monitors.DP-1]
+    path = "/home/milesj/Pictures/wallpapers/apex_octane.jpg"
+
+    [wallpaper.monitors.DP-3]
+    path = "/home/milesj/Pictures/wallpapers/city_top_view.jpg"
+
+    [wallpaper.monitors.FALLBACK]
+    path = "/home/milesj/Pictures/wallpapers/neon_city.jpg"
+
+    [wallpaper.monitors.HDMI-A-1]
+    path = "/home/milesj/Pictures/wallpapers/northern-night.jpg"
+
 [widget.clock]
 color = "secondary"
-format = "{:%H:%M %A %m/%d/%y}"
+format = "{:%H:%M %A %d/%m/%y}"
 
 [widget.launcher]
 color = "secondary"
@@ -127,6 +159,121 @@ type = "weather"
 [location]
 address = "old alresford uk"
 
+[lockscreen_widgets]
+enabled = false
+schema_version = 2
+widget_order = [
+    "lockscreen-login-box@DP-1",
+    "lockscreen-login-box@DP-2",
+    "lockscreen-login-box@HDMI-A-1",
+    "lockscreen-login-box@DP-3"
+]
+
+    [lockscreen_widgets.grid]
+    cell_size = 16
+    major_interval = 4
+    visible = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@DP-1"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 800.0
+    cy = 718.0
+    output = "DP-1"
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@DP-1".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@DP-2"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 1280.0
+    cy = 1258.0
+    output = "DP-2"
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@DP-2".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@DP-3"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 1280.0
+    cy = 900.0
+    output = "DP-3"
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@DP-3".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@HDMI-A-1"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 480.0
+    cy = 358.0
+    output = "HDMI-A-1"
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@HDMI-A-1".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
+
 [widget.temp]
 show_value = false
 
@@ -152,6 +299,8 @@ color = "secondary"
 active_pill_size = 2.5
 capsule = true
 capsule_fill = "on_primary"
-show_labels = false
 inactive_pill_size = 1.0
-pill_scale = 0.80
+label_source = "id"
+labels_only_when_occupied = true
+pill_scale = 0.90
+show_labels = true
