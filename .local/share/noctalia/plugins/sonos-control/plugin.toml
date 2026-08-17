@@ -1,0 +1,12 @@
+id           = "milesj/sonos-control"
+name         = "Sonos Control"
+version      = "1.0.0"
+plugin_api   = 3
+author       = "milesj"
+license      = "MIT"
+description  = "Play/pause, volume, and now-playing for local Sonos speakers via direct UPnP/SOAP control."
+tags         = ["media", "sonos", "audio"]
+
+[[widget]]
+id    = "sonos"
+entry = "widget.luau"

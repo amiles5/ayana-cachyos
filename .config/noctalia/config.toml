@@ -2,7 +2,7 @@
 ui_scale = 1.20
 
 [bar.default]
-center = [ "workspaces", "spacer_1", "clock", "spacer_2", "weather" ]
+center = [ "workspaces", "spacer_1", "clock", "spacer_2", "weather", "spacer_3", "sonos" ]
 concave_edge_corners = true
 end = [ "tray", "group:g2", "network", "volume", "spacer_1", "control-center", "session" ]
 margin_edge = 0
@@ -126,6 +126,9 @@ directory = "/home/milesj/Pictures/wallpapers"
     [wallpaper.monitors.HDMI-A-1]
     path = "/home/milesj/Pictures/wallpapers/northern-night.jpg"
 
+[plugins]
+enabled = [ "milesj/sonos-control" ]
+
 [widget.clock]
 color = "secondary"
 format = "{:%H:%M %A %d/%m/%y}"
@@ -151,6 +154,12 @@ type = "spacer"
 
 [widget.spacer_2]
 type = "spacer"
+
+[widget.spacer_3]
+type = "spacer"
+
+[widget.sonos]
+type = "milesj/sonos-control:sonos"
 
 [widget.weather]
 color = "secondary"
