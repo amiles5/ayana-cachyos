@@ -70,8 +70,8 @@ local function render()
   end
 
   barWidget.render(ui.row({ gap = 6, align = "center" }, {
-    ui.label({ text = icon, onClick = "onToggle" }),
-    ui.label({ text = text, onClick = "onToggle" }),
+    ui.label({ text = icon }),
+    ui.label({ text = text }),
   }))
 end
 
@@ -122,7 +122,7 @@ function update()
   end)
 end
 
-function onToggle()
+function onClick()
   if state.pending then return end
   local ip = state.coordIp or currentRoom().ip
   local action = (state.transport == "PLAYING") and "Pause" or "Play"
