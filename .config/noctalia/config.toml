@@ -131,7 +131,7 @@ enabled = [ "milesj/sonos-control" ]
 
 [widget.clock]
 color = "secondary"
-format = "{:%H:%M %A %d/%m/%y}"
+format = "{:%H:%M}"
 
 [widget.launcher]
 color = "secondary"
