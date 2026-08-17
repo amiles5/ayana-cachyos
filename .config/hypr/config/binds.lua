@@ -89,6 +89,11 @@ end
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag())
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize())
 
+-- Resize (move the split boundary between two tiled windows).
+-- SUPER + Left/Right is already focus-switching, so this lives on ALT.
+hl.bind(mainMod .. " + ALT + Left",  hl.dsp.window.resize({ x = -20, y = 0, relative = true }), { repeating = true })
+hl.bind(mainMod .. " + ALT + Right", hl.dsp.window.resize({ x = 20,  y = 0, relative = true }), { repeating = true })
+
 -- Zoom
 local function zoomfunction(value)
     local zoomvalue = hl.get_config("cursor:zoom_factor")
