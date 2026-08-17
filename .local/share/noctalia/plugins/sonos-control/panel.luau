@@ -2,7 +2,7 @@
 -- rooms, control play/pause + volume for the active room, and play a
 -- Sonos Favourite. All state comes from service.luau; this file only
 -- ever sends commands via noctalia.state.set("sonos.cmd", ...).
-local ROOM_ORDER = { "Bedroom", "Dining", "Kitchen" }
+local ROOM_ORDER = { "Bedroom", "Dining", "Kitchen", "Living Room" }
 local activeRoom = "Dining"
 local rooms = {}
 local favorites = {}

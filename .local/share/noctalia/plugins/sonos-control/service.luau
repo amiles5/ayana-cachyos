@@ -4,9 +4,10 @@
 -- is the single source of truth so bar.luau and panel.luau never talk
 -- to the speakers directly - they just watch state and set commands.
 local ROOMS = {
-  { name = "Bedroom", ip = "192.168.1.181", rincon = "RINCON_7828CAE285F801400" },
-  { name = "Dining",  ip = "192.168.1.194", rincon = "RINCON_7828CAE6B2EA01400" },
-  { name = "Kitchen", ip = "192.168.1.204", rincon = "RINCON_347E5C35CDB801400" },
+  { name = "Bedroom",     ip = "192.168.1.181", rincon = "RINCON_7828CAE285F801400" },
+  { name = "Dining",      ip = "192.168.1.194", rincon = "RINCON_7828CAE6B2EA01400" },
+  { name = "Kitchen",     ip = "192.168.1.204", rincon = "RINCON_347E5C35CDB801400" },
+  { name = "Living Room", ip = "192.168.1.227", rincon = "RINCON_38420B9B1FEE01400" },
 }
 
 local activeRoom = "Dining"
@@ -152,11 +153,20 @@ local function stepFavoritesParse()
   end
 end
 
+-- pcall-wrapped: an uncaught error here (e.g. a malformed favourites blob)
+-- must not be allowed to silently stop the host from calling update() again -
+-- that would freeze all polling and command handling until the plugin is
+-- reloaded, which is exactly what happened once during development.
 function update()
   noctalia.setUpdateInterval(5000)
-  stepFavoritesParse()
-  pollIndex = 1
-  pollNext()
+  local ok, err = pcall(function()
+    stepFavoritesParse()
+    pollIndex = 1
+    pollNext()
+  end)
+  if not ok then
+    noctalia.notifyError("Sonos Control", "update() error: " .. tostring(err))
+  end
 end
 
 local function toggleActive(room)
@@ -224,23 +234,28 @@ end
 
 noctalia.state.watch("sonos.cmd", function(cmd)
   if not cmd then return end
-  if cmd.action == "TOGGLE" then
-    toggleActive(cmd.room)
-  elseif cmd.action == "VOLUME_DELTA" then
-    setVolume(cmd.room, cmd.delta, nil)
-  elseif cmd.action == "VOLUME_SET" then
-    setVolume(cmd.room, nil, cmd.value)
-  elseif cmd.action == "SET_ACTIVE" then
-    activeRoom = cmd.room
-    publish()
-  elseif cmd.action == "JOIN" then
-    joinGroup(cmd.room, cmd.target)
-  elseif cmd.action == "LEAVE" then
-    leaveGroup(cmd.room)
-  elseif cmd.action == "REFRESH_FAVORITES" then
-    refreshFavorites()
-  elseif cmd.action == "PLAY_FAVORITE" then
-    playFavorite(cmd.room, cmd.index)
+  local ok, err = pcall(function()
+    if cmd.action == "TOGGLE" then
+      toggleActive(cmd.room)
+    elseif cmd.action == "VOLUME_DELTA" then
+      setVolume(cmd.room, cmd.delta, nil)
+    elseif cmd.action == "VOLUME_SET" then
+      setVolume(cmd.room, nil, cmd.value)
+    elseif cmd.action == "SET_ACTIVE" then
+      activeRoom = cmd.room
+      publish()
+    elseif cmd.action == "JOIN" then
+      joinGroup(cmd.room, cmd.target)
+    elseif cmd.action == "LEAVE" then
+      leaveGroup(cmd.room)
+    elseif cmd.action == "REFRESH_FAVORITES" then
+      refreshFavorites()
+    elseif cmd.action == "PLAY_FAVORITE" then
+      playFavorite(cmd.room, cmd.index)
+    end
+  end)
+  if not ok then
+    noctalia.notifyError("Sonos Control", "cmd " .. tostring(cmd.action) .. " error: " .. tostring(err))
   end
 end)
 
