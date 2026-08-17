@@ -2,7 +2,7 @@
 ui_scale = 1.20
 
 [bar.default]
-center = [ "workspaces", "spacer_1", "active_window" ]
+center = [ "workspaces", "spacer_1", "clock", "spacer_2", "weather" ]
 concave_edge_corners = true
 end = [ "media", "spacer_1", "tray", "notifications", "network", "volume", "session" ]
 margin_edge = 0
@@ -12,7 +12,7 @@ radius_bottom_right = 12
 radius_top_left = 0
 radius_top_right = 0
 scale = 1.10
-start = [ "launcher", "clock", "spacer_1", "group:g1" ]
+start = [ "launcher", "spacer_1", "group:g1" ]
 thickness = 35
 
     [[bar.default.capsule_group]]
@@ -116,6 +116,16 @@ color = "error"
 
 [widget.spacer_1]
 type = "spacer"
+
+[widget.spacer_2]
+type = "spacer"
+
+[widget.weather]
+color = "secondary"
+type = "weather"
+
+[location]
+address = "old alresford uk"
 
 [widget.temp]
 show_value = false
