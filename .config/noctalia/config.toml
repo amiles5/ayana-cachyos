@@ -79,7 +79,7 @@ settings_show_advanced = true
     variant = "destructive"
 
 [idle.behavior.lock]
-timeout = 1800
+timeout = 3600
 action = "lock_and_suspend"
 enabled = true
 
