@@ -6,6 +6,141 @@ Dotfiles for `ayana` — CachyOS + Hyprland (Wayland), managed with [yadm](https
 This file is a running log of the configuration changes made on this machine, most recent
 context at the bottom of each section.
 
+## Full rebuild from a CachyOS boot disk
+
+Disaster-recovery runbook for rebuilding `ayana` from nothing but this repo and a CachyOS
+ISO. Confirmed disk/bootloader facts below are read from the live system (`findmnt`,
+`btrfs subvolume list`, `pacman -Qs`), not guessed.
+
+**1. Boot media & installer choices**
+
+- ISO: **CachyOS Desktop, Hyprland edition** (or a generic CachyOS ISO, selecting the
+  `cachyos-hypr-noctalia` package group at the desktop-environment step — that's the exact
+  meta-package installed on this machine, pulling in Hyprland + Noctalia + everything this
+  repo's `hypr`/`noctalia` config depends on).
+- Kernel: `linux-cachyos` (the BORE-scheduler CachyOS kernel) as primary. This machine also
+  keeps `linux-cachyos-lts` installed as a fallback boot entry — add it via
+  `cachyos-kernel-manager` after first boot if the installer doesn't offer a second kernel.
+- Locale/keyboard: `en_GB.UTF-8`, keyboard layout **GB**, model **pc105** (*not* an Apple/Mac
+  layout, even though the display is a Studio Display — the physical keyboard is a Logitech
+  MX Mechanical; see *Input / keyboard model* below for what picking the wrong model breaks).
+- User: `milesj`.
+
+**2. Partitioning — match the existing layout exactly**
+
+| Partition | Size | Filesystem | Mount |
+| --- | --- | --- | --- |
+| 1 (ESP) | ~4GiB | FAT32 | `/boot` (not `/boot/efi` — CachyOS mounts the ESP directly at `/boot`) |
+| 2 | rest of disk | Btrfs | `/` |
+
+No separate swap partition — this machine uses `zram` (swap-on-compressed-RAM), configured
+automatically by `cachyos-settings`, not a disk partition.
+
+For the Btrfs partition, use the installer's **automatic subvolumes + Snapper** preset
+rather than hand-crafting subvolumes — it produces exactly this layout (verified live):
+
+```
+@         →  /
+@home     →  /home
+@root     →  /root
+@srv      →  /srv
+@cache    →  /var/cache
+@tmp      →  /var/tmp
+@log      →  /var/log
+.snapshots (holds Snapper's numbered snapshot subvolumes)
+```
+
+Mount options on every subvolume: `noatime,compress=zstd:1,ssd,discard=async,space_cache=v2`.
+
+**3. Bootloader**
+
+**Limine**, not GRUB or systemd-boot — select it explicitly if the installer offers a
+choice. The installer's default Snapper integration already wires up `limine-snapper-sync`
+(confirmed installed: `limine`, `limine-mkinitcpio-hook`, `limine-snapper-sync`, `snapper`,
+`snap-pac`, `cachyos-snapper-support` — all part of the standard CachyOS Btrfs+Limine
+preset, nothing hand-installed here). After first boot, re-apply the boot-time tweak from
+*Power-on → desktop boot time* below (`timeout: 2` in `/boot/limine.conf`) — it's outside
+`$HOME` so the installer's default (`timeout: 5`) comes back on a fresh install.
+
+**4. First boot — get the dotfiles**
+
+```sh
+sudo pacman -S --needed yadm github-cli
+gh auth login                     # browser/device flow, sets up the git credential helper
+yadm clone https://github.com/amiles5/ayana-cachyos.git
+```
+
+(No `yadm encrypt`/secrets are used in this repo — see *This repo* below for the full list
+of what's deliberately excluded instead. Everything cloned is safe to apply immediately.)
+
+**5. Restore packages**
+
+```sh
+# Native packages (explicitly installed, excludes pulled-in deps)
+sudo pacman -S --needed - < ~/.pkglist/pacman-explicit.txt
+
+# AUR/foreign packages — no paru/yay on this system, build each manually:
+for pkg in $(cat ~/.pkglist/pacman-foreign-aur.txt); do
+    git clone "https://aur.archlinux.org/$pkg.git" "/tmp/$pkg" && \
+    (cd "/tmp/$pkg" && makepkg -si)
+done
+
+# Flatpaks
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak install flathub $(cat ~/.pkglist/flatpak.txt)
+```
+
+**Firefox PWAs are not captured by any pkglist** (WhatsApp Web, Sonos) — reinstall them
+per the *WhatsApp* and *Sonos* sections below. **Important**: `firefoxpwa site install`
+generates a fresh random site ID every time, so the new IDs will **not** match the ones
+currently hardcoded in `hypr/config/binds.lua` (`FFPWA-01M00K4G8CW4N60N8Q6G1BF8QB` for
+WhatsApp, `FFPWA-01KZQREYPXKDBAHY9JWSG975VB` for Sonos) or `hypr/config/windowrules.lua`'s
+matching auto-workspace rules. After reinstalling each PWA, run `firefoxpwa profile list`
+to get the new ID and update both files' `FFPWA-<ID>`/launch-command references before
+those binds and auto-workspace rules will work again.
+
+**6. System-level config outside `$HOME`**
+
+None of this is yadm-tracked (yadm's work tree is `$HOME`) — recreate by hand, referencing
+the full detail in each linked section:
+
+| File/action | Purpose | Detail |
+| --- | --- | --- |
+| `/etc/sddm.conf.d/autologin.conf` | Autologin to `hyprland-uwsm` as `milesj` | *SDDM autologin* section |
+| `/boot/limine.conf` `timeout: 2` | Faster boot | *Power-on → desktop boot time* section |
+| `/etc/udev/hwdb.d/70-logitech-uk-102nd.hwdb` + `sudo systemd-hwdb update && sudo udevadm trigger` | Logitech 102nd-key remap | *Input / keyboard model* section |
+| `lpadmin -p Brother_HL1210W ...` (CUPS) + `/etc/cups/cupsd.conf` `Listen`→`Port` | Printer + AirPrint | *Printer* section |
+| `sudo ufw allow from 192.168.1.0/24 to any port 631 proto tcp` | Let AirPrint through the firewall | *Printer → AirPrint* section |
+
+**7. Services to enable**
+
+```sh
+sudo systemctl enable --now bolt.service cups.service tailscaled.service
+systemctl --user enable --now ssh-agent.socket pkglist-update.timer \
+    hyprland-resume-fix.service studio-display-tunnel-fix.service
+```
+
+**8. Noctalia plugin & GUI-managed state**
+
+`~/.local/share/noctalia/plugins/sonos-control` comes along automatically with the yadm
+clone (it's inside `$HOME`), but plugin *enablement* lives in the untracked
+`~/.local/state/noctalia/settings.toml` — re-enable it with
+`noctalia msg plugins enable milesj/sonos-control`. Also update the speaker IPs hardcoded
+in `widget.luau` if the LAN has changed since — see *Noctalia shell → Sonos control*
+below. More generally: expect `~/.local/state/noctalia/settings.toml` to start from
+noctalia's own defaults, not this machine's tuned state — re-apply anything from the
+*Noctalia shell — bar widgets, plugins, and the config/state split* section that matters
+(weather location, bar widget layout, etc.) via the Settings GUI, since `config.toml` alone
+doesn't fully determine the live bar layout.
+
+**9. Reboot and verify**
+
+`hyprctl monitors` (scale `3.2000` on the Studio Display, EDID-matched not port-matched),
+`hyprctl binds -j` (spot-check a few keybinds), `systemctl --user list-timers`, and
+`lpstat -v` (printer). Re-run the PTZ camera framing tune from *Camera framing* below if
+using the webcam — those values don't persist across a fresh install any more than they
+persist across a reboot on the current one.
+
 ## Keybind reference (`hypr/config/binds.lua`)
 
 Source of truth is `binds.lua` itself — update this table when binds change. A generated,
