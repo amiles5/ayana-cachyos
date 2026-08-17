@@ -126,7 +126,7 @@ systemctl --user enable --now ssh-agent.socket pkglist-update.timer \
 clone (it's inside `$HOME`), but plugin *enablement* lives in the untracked
 `~/.local/state/noctalia/settings.toml` — re-enable it with
 `noctalia msg plugins enable milesj/sonos-control`. Also update the speaker IPs hardcoded
-in `widget.luau` if the LAN has changed since — see *Noctalia shell → Sonos control*
+in `service.luau` if the LAN has changed since — see *Noctalia shell → Sonos control*
 below. More generally: expect `~/.local/state/noctalia/settings.toml` to start from
 noctalia's own defaults, not this machine's tuned state — re-apply anything from the
 *Noctalia shell — bar widgets, plugins, and the config/state split* section that matters
@@ -570,28 +570,59 @@ lookup (lat/lon `51.11542, -1.14211`) and is precise enough for weather.
 
 ### Sonos control (local noctalia plugin)
 
-`~/.local/share/noctalia/plugins/sonos-control/` (`plugin.toml` + `widget.luau`, **yadm-
-tracked** — unlike `.local/state`, `.local/share` is inside the yadm work tree). A bar
-widget that talks **directly** to each Sonos speaker's local UPnP/SOAP control endpoint on
-port 1400 — no cloud account, no bridge process, no Python dependency:
+`~/.local/share/noctalia/plugins/sonos-control/` (**yadm-tracked** — unlike
+`.local/state`, `.local/share` is inside the yadm work tree). Talks **directly** to each
+Sonos speaker's local UPnP/SOAP control endpoint on port 1400 — no cloud account, no
+bridge process, no Python dependency. Three entries declared in `plugin.toml`
+(`plugin_api = 9`):
 
-- Speaker IPs/RINCON ids hardcoded in `widget.luau`, discovered via `avahi-browse -a -t`
+- **`service.luau`** (headless) — the single source of truth. Polls all three rooms every
+  5s (transport state, track title, volume, group-coordinator) and publishes to
+  `noctalia.state`; handles every command (`sonos.cmd`) from the bar/panel — play/pause,
+  volume, switch active room, join/leave a group, refresh favourites, play a favourite.
+  Neither UI file talks to a speaker directly.
+- **`bar.luau`** — thin widget, just watches state and renders. **Click** toggles
+  play/pause on the active room, **scroll** adjusts its volume (±2%/step), **right-click**
+  opens the panel.
+- **`panel.luau`** — opened via `noctalia.togglePanel(...)`. Room switcher (tap a room to
+  make it "active"), a grouping toggle per non-active room ("grouped with the active
+  room?"), play/pause + a volume slider for the active room, and a scrollable list of
+  Sonos Favourites to tap and play.
+- Speaker IPs/RINCON ids hardcoded in `service.luau`, discovered via `avahi-browse -a -t`
   (`_sonos._tcp`): Bedroom `192.168.1.181`, Dining `192.168.1.194`, Kitchen
   `192.168.1.204` (a second Kitchen unit at `.227` is presumably its stereo-pair partner,
   not separately targeted).
-- **Click** toggles play/pause, **scroll** adjusts volume (±2%/step), **right-click**
-  cycles between rooms.
-- Grouped/follower speakers are resolved to their actual group coordinator: a follower's
+- **Grouping**: `SetAVTransportURI` with `x-rincon:<coordinator-RINCON>` on the joining
+  speaker adds it to a group; `BecomeCoordinatorOfStandaloneGroup` pulls it back out. Group
+  membership itself is inferred cheaply with no extra UPnP service needed: a follower's
   `GetPositionInfo` returns `TrackURI: x-rincon:<RINCON_ID>` instead of real track data, so
-  the widget re-targets that RINCON id's IP before reading transport state/metadata or
-  sending Play/Pause — otherwise a follower reports stale/empty state.
-- **Bug fixed after initial build**: left-click did nothing. `ui.label` doesn't support an
-  `onClick` prop (silently ignored — logged as a `ui-tree` warning, easy to miss); the
-  plugin runtime instead expects a reserved top-level Luau function literally named
-  `onClick()` for whole-widget clicks. Verified the fix by temporarily installing `ydotool`
-  (removed again after), precisely locating the widget's on-screen position, and confirming
-  a synthetic click actually flipped Dining between `PLAYING`/`STOPPED` via the real SOAP
-  call — not just that the click handler fired.
+  rooms sharing the same resolved coordinator RINCON are in the same group.
+- **Favourites**: `ContentDirectory` `Browse` on `ObjectID=FV:2` returns the Sonos
+  Favourites list as DIDL-Lite. Not every favourite is directly playable — browse-only
+  entries like "Albums" or "Discover Sonos Radio" have an empty `<res>` and are silently
+  skipped on click; real ones (individual stations/tracks/playlists) are played by feeding
+  their `<res>` URI + `<r:resMD>` metadata into `SetAVTransportURI` then `Play`, same as a
+  real Sonos controller does.
+- **Bugs found and fixed after the initial single-file build**:
+  - `ui.label` doesn't support an `onClick` prop (silently ignored, logged as a `ui-tree`
+    warning) — whole-widget clicks need a reserved top-level `onClick()` function instead.
+  - `ui.toggle` takes a `checked` prop, not `value` (same silent-`ui-tree`-warning failure
+    mode as above — confirmed from the `checked`/`onChange` example in noctalia's official
+    `example` plugin).
+  - Parsing the favourites `<Result>` blob (decode + regex over ~10KB of DIDL-Lite) reliably
+    exceeded the plugin sandbox's CPU budget for a single "async http callback" invocation,
+    even after trimming to the minimum work needed. Fixed by only stashing the raw text in
+    that callback and parsing it inside `update()` instead — one `<item>` per tick, spread
+    across several ticks, so no single invocation does more than one decode+match.
+  - A double-escaping bug in `playFavorite`: the extracted `<res>` URI was already at the
+    "safe to re-embed in a new XML element" escaping level (matching `resMD`), but the code
+    ran it through an XML-escape helper anyway, turning every `&` in stream URLs into
+    `&amp;amp;` — Sonos rejected the malformed request outright (HTTP 500). Fixed by
+    embedding `res` as-is, same as `resMD`.
+  - All four verified end-to-end: temporarily installed `ydotool` (removed again after),
+    precisely located widgets/buttons on-screen, and confirmed synthetic clicks produced
+    real, correct state changes on the actual speakers via direct SOAP checks — not just
+    that a click handler fired or a log warning went away.
 - Plugin discovered/loaded from `~/.local/share/noctalia/plugins/<name>/` as a "local"
   source (noctalia's dev-plugin convention); enabled via `[plugins] enabled =
   ["milesj/sonos-control"]` in both `config.toml` and the live state file.
@@ -600,7 +631,7 @@ port 1400 — no cloud account, no bridge process, no Python dependency:
   via the gateway's MAC OUI `D8:D8:E5`; no admin credentials available to configure it from
   here). MACs for reference: Bedroom `78:28:CA:E2:85:F8`, Dining `78:28:CA:E6:B2:EA`,
   Kitchen `34:7E:5C:35:CD:B8` (+ second unit `38:42:0B:9B:1F:EE`). If the router ever
-  reassigns these, the widget's hardcoded IPs need updating in `widget.luau`.
+  reassigns these, `service.luau`'s hardcoded `ROOMS` table needs updating.
 
 ## Desktop watermark (`hypr/scripts/watermark.py`, `hypr/config/autostart.lua`)
 
