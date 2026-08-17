@@ -4,6 +4,8 @@ hl.config({
     input = {
         kb_layout    = "gb",
         kb_model     = "pc105",
+        kb_options   = "terminate:ctrl_alt_bksp",
+        kb_rules     = "evdev",
         follow_mouse = 1,
         sensitivity  = 0,
         accel_profile = "flat",
