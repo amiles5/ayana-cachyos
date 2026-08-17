@@ -8,7 +8,10 @@ context at the bottom of each section.
 
 ## Keybind reference (`hypr/config/binds.lua`)
 
-Source of truth is `binds.lua` itself — update this table when binds change.
+Source of truth is `binds.lua` itself — update this table when binds change. A generated,
+side-by-side comparison against the `aerospace-config` (macOS) keymap also exists as a
+published Claude Artifact ("Mirrored Keymap") — a static snapshot, regenerate on request
+rather than trusting it to auto-track this table.
 
 Notation: `+` between keys means "hold together," it's not a literal key to
 press. Punctuation keys (`comma`, `period`, `bracketleft`, `bracketright`,
@@ -37,6 +40,7 @@ etc.) are their unshifted form unless `SHIFT` is explicitly listed — e.g.
 | `SUPER + SHIFT + CONTROL + 1..6` | Move window to workspace N on relative monitor |
 | `SUPER + mouse:272` (left) | Drag-move window |
 | `SUPER + mouse:273` (right) | Drag-resize window |
+| `SUPER + ALT + Left/Right` | Resize the split boundary between two tiled windows (20px steps, repeating) |
 | `SUPER + Minus` / `SUPER + Plus` | Cursor zoom out/in (repeating) |
 | `SUPER + keypad -` / `keypad +` | Same, via keypad |
 
@@ -49,9 +53,10 @@ etc.) are their unshifted form unless `SHIFT` is explicitly listed — e.g.
 | `SUPER + T` | gnome-text-editor |
 | `SUPER + SHIFT + C` / `XF86Calculator` | gnome-calculator |
 | `SUPER + SHIFT + Return` | Firefox → workspace 5 |
-| `SUPER + SHIFT + M` | ZapZap (WhatsApp) |
-| `SUPER + SHIFT + O` | Sonos, Firefox PWA |
+| `SUPER + SHIFT + M` | WhatsApp Web, Firefox PWA → workspace 2 |
+| `SUPER + SHIFT + U` | Sonos, Firefox PWA → workspace 6 |
 | `SUPER + SHIFT + P` | iCloud Photos, Flatpak |
+| `SUPER + SHIFT + N` | Joplin → workspace 4 |
 | `CONTROL + SHIFT + Escape` | kitty running btop |
 | `SUPER + Z` | Noctalia settings toggle |
 | `SUPER + X` | Noctalia control center |
@@ -112,6 +117,9 @@ etc.) are their unshifted form unless `SHIFT` is explicitly listed — e.g.
   (BIOS/GRUB) can only ever come from HDMI regardless of this setting: the Studio Display's
   USB4/Thunderbolt tunnel has no pre-OS display capability on this SoC, so this only
   controls what happens once Hyprland has loaded, not what's on screen during boot itself.
+- `MONITOR1` was later switched from a fixed port name to an EDID-description match
+  (`desc:Apple Computer Inc StudioDisplay 0xBE714649`) to survive connector renumbering —
+  see *Resume-from-suspend fixes* below for why.
 
 ## Brightness — Apple Studio Display (`hypr/config/binds.lua`, `asdbctl`)
 
@@ -210,11 +218,43 @@ Thunderbolt device is authorized.
 - Mic: detected via `snd_usb_audio` as PipeWire source
   `alsa_input...Studio_Display...mono-fallback` ("Studio Display Mono"),
   mic port active. Verified live with a short `parec` recording — measured
-  mean -38 dB / peak -24.8 dB (real ambient signal, not silence).
-- Both test captures were deleted immediately after verification (a photo/
-  audio of the room, not something worth keeping around).
+  mean -38 dB / peak -24.8 dB (real ambient signal, not silence). A second
+  check later measured mean -13.8 dB / peak -0.9 dB — noticeably hotter,
+  close to clipping. Flagged but left untouched (no gain adjustment made) —
+  revisit if audio calls sound distorted.
+- Test captures were deleted immediately after each verification (a photo/
+  audio of the room, not something worth keeping around) — except one
+  deliberate snapshot explicitly saved to `~/Downloads` on request.
 
-## App launch → workspace targeting (`hypr/config/binds.lua`)
+### Camera framing — real UVC pan/tilt/zoom controls
+
+The initial test snapshot was dark and off-center. Investigated whether the
+camera exposes any framing/exposure controls:
+
+- `v4l2-ctl -d /dev/video0 --list-ctrls` confirmed the Studio Display exposes
+  genuine hardware PTZ over standard UVC controls: `pan_absolute`,
+  `tilt_absolute`, `zoom_absolute` — settable with `v4l2-ctl --set-ctrl=`.
+  **No exposure/brightness/gain control exists at all**, even after forcing
+  `auto_exposure=1` (Manual Mode) — no new controls appeared. The dark image
+  is a closed auto-exposure black box; only fixable via lighting changes or
+  an external gamma-correction pipeline (not built).
+- Framing was tuned live: `qv4l2` gives a preview + control panel (has to be
+  launched with `setsid nohup qv4l2 -d /dev/video0 ... &` — plain
+  backgrounding died between terminal calls). `pan_absolute`'s huge range
+  renders as a spin-box rather than a slider in `qv4l2`, so pan was tuned by
+  hand via `v4l2-ctl --set-ctrl` with live visual feedback instead, in
+  ~500,000-unit nudges. `tilt_absolute` was tuned by bisecting the range
+  based on "too high"/"too low" feedback.
+- Final values: `pan_absolute=1000800`, `tilt_absolute=-1440000`,
+  `zoom_absolute=300` (maxed at the control's range ceiling). **Not
+  persisted** — resets on reboot/replug; deliberately left that way rather
+  than wiring up a restore script.
+- Other webcam apps evaluated/installed via Flatpak: **Cameractrls** and
+  **Facetracker** (per-request install), **Webcamoid** (broader
+  compositing/effects tool). All confirmed working, left installed but not
+  set to autostart — `.pkglist/flatpak.txt`.
+
+## App launch → workspace targeting (`hypr/config/binds.lua`, `hypr/config/windowrules.lua`)
 
 - `SUPER+Return` launches kitty directly onto workspace 1: `[workspace 1] ... kitty`.
 - `SUPER+SHIFT+Return` launches Firefox directly onto workspace 5: `[workspace 5] ... firefox`
@@ -227,9 +267,29 @@ App-launch binds were rationalized onto a uniform `SUPER + SHIFT + <key>` prefix
 **except** the three most-used ones — terminal (`SUPER+Return`), file manager
 (`SUPER+E`), editor (`SUPER+T`) — deliberately kept on their fast single-key
 binds rather than adding a keystroke to the most common actions. Current
-mapping: `SHIFT+C` calculator, `SHIFT+M` ZapZap, `SHIFT+O` Sonos, `SHIFT+P`
-iCloud Photos, `SHIFT+Return` Firefox. `O` (Sonos) was picked to dodge existing non-app binds on `S` — see the Sonos
-section below for specifics.
+mapping: `SHIFT+C` calculator, `SHIFT+M` WhatsApp Web, `SHIFT+U` Sonos, `SHIFT+P`
+iCloud Photos, `SHIFT+N` Joplin, `SHIFT+Return` Firefox.
+
+### Auto-assigned workspaces (`windowrules.lua`)
+
+Mirrors `amiles5/aerospace-config`'s `on-window-detected` rules — apps land on
+the same workspace whether launched via keybind, the app launcher, or a
+notification click, not just when using the dedicated bind:
+
+| Workspace | App (Hyprland class match) |
+| --- | --- |
+| 1 | kitty |
+| 2 | WhatsApp Web (`FFPWA-01M00K4G8CW4N60N8Q6G1BF8QB`) |
+| 3 | iCloud Photos |
+| 4 | Joplin (`joplin-app-desktop`) |
+| 5 | Firefox / Zen |
+| 6 | Sonos (`FFPWA-01KZQREYPXKDBAHY9JWSG975VB`) |
+
+macOS-only apps in the aerospace-config source with no Linux equivalent installed
+(Finder, FaceTime, Moneydance, System Preferences, Logi Options+) are intentionally
+not mirrored here. Window classes were verified live via `hyprctl clients -j`, not
+guessed from `.desktop` file hints — Joplin's `StartupWMClass` in particular is
+wrong (`@joplin/app-desktop`), the real class is `joplin-app-desktop`.
 
 ## Keyboard/workspace cycling (`hypr/config/binds.lua`)
 
@@ -248,6 +308,19 @@ section below for specifics.
   version reuses the `HL.Workspace` objects already returned by `get_workspaces()` instead
   of re-querying.)
 
+## Split-boundary resize (`hypr/config/binds.lua`)
+
+`SUPER + ALT + Left/Right` moves the split boundary between two tiled windows (grows/
+shrinks the active window against its neighbor), 20px steps, repeating. `SUPER+Left/Right`
+was already focus-switching, so this couldn't reuse that combo — `ALT` was free and matches
+the existing `mainMod + ALT` pattern used elsewhere for secondary actions.
+
+Uses `hl.dsp.window.resize({ x, y, relative = true })` — this custom Lua-based Hyprland
+config layer reinterprets `hyprctl dispatch` arguments as Lua source, so classic
+`hyprctl dispatch resizeactive <dx> <dy>` CLI syntax doesn't work here; had to find the
+actual table signature (`{ x, y, relative?, window? }`) by testing directly via
+`hyprctl dispatch 'hl.dsp.window.resize(...)'` and reading the resulting error messages.
+
 ## Monitor-targeting binds removed (`hypr/config/binds.lua`)
 
 `SUPER+1..6` (focus workspace) and `SUPER+SHIFT+1..6` (move window to workspace) were
@@ -264,6 +337,15 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
 - Expanded from 3 to 6 persistent workspaces on startup, all pinned to `MONITOR1`.
 - Bumped `NUM_WPM` (workspaces per monitor) from 3 to 6 so the `SUPER+ALT+1-6`,
   `SUPER+CONTROL+1-6`, and `SUPER+SHIFT+CONTROL+1-6` loops cover all six.
+- There's also a named `gaming` workspace (`name:gaming`) for Steam/games, not part of
+  the numbered 1–6 set.
+- **Random startup-workspace bug, fixed**: Hyprland occasionally started on the `gaming`
+  workspace (or an unexpected numbered one) instead of workspace 1. Root cause: the
+  `gaming` workspace rule *and* all six numbered workspace rules were marked
+  `default = true` on the same monitor — only one `default` can actually win per monitor,
+  and which one did was effectively random across boots. Fixed by removing
+  `default = true` from the `gaming` rule only, leaving workspace `1` as the sole default.
+  Verified via a full `systemctl reboot` — confirmed starting on workspace 1 afterward.
 
 ## Input / keyboard model (`hypr/config/inputs.lua`)
 
@@ -282,11 +364,23 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
   `#`/`\` key (next to right shift) — exactly the symptom reported. Changed to
   `kb_model = "pc105"` with no `kb_variant`; `hyprctl devices -j` now correctly reports
   `English (UK)` instead of `English (UK, Macintosh)`.
+- Added `kb_options = "terminate:ctrl_alt_bksp"` and `kb_rules = "evdev"`, discovered
+  missing during a comparison against `amiles5/ayana-nixos`'s equivalent Hyprland input
+  block (same machine, separate NixOS install on another SSD, not yet booted into). The
+  `terminate` option gives a Ctrl+Alt+Backspace session-kill escape hatch that existed on
+  nixos but not here.
+- **Logitech 102nd-key remap** (also found missing via the same nixos comparison): on this
+  Logitech UK keyboard, the key left of `1` reports as `grave` (HID usage `0x70035`)
+  instead of the expected ISO 102nd-key position. Fixed with a udev hwdb rule —
+  `/etc/udev/hwdb.d/70-logitech-uk-102nd.hwdb` (`evdev:input:*` /
+  `KEYBOARD_KEY_70035=102nd`), applied via `sudo systemd-hwdb update && sudo udevadm
+  trigger`. **Outside `$HOME`, not yadm-tracked** — see *This repo* below.
 
 ## Idle → lock screen (`noctalia/config.toml`)
 
-- Added `[idle.behavior.lock]` (`timeout = 1800`, `action = "lock_and_suspend"`,
-  `enabled = true`) so the system locks and suspends automatically after 30 minutes idle.
+- Added `[idle.behavior.lock]` (`action = "lock_and_suspend"`, `enabled = true`) so the
+  system locks and suspends automatically after a period of inactivity. Timeout started
+  at `1800` (30 min), later increased to `3600` (60 min).
 - Deliberately left `[idle.behavior.screen-off]` disabled — no separate DPMS/screen-blanking
   behavior, only the lock-and-suspend action fires.
 - Verified via Noctalia's hot-reload (`~/.cache/noctalia/noctalia.log` logged
@@ -297,137 +391,110 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
   physically there to wake and unlock it. Reverted back to `lock_and_suspend` shortly after —
   accepted the tradeoff deliberately rather than leaving it lock-only.
 
-## iCloud — [iCloud-Linux](https://github.com/TaylanTatli/iCloud-Linux) (Flatpak)
+## Noctalia shell — bar widgets, plugins, and the config/state split
 
-- Third attempt at iCloud access, after the AUR Electron wrapper (dead end) and the
-  firefoxpwa version (worked, but later removed — see below) documented next. This one
-  is a **native** GTK4/Libadwaita app using WebKitGTK for rendering (C++, not Electron),
-  distributed only as a downloadable `.flatpak` bundle attached to GitHub releases — not
-  on Flathub, so `flatpak search`/`flatpak install <id>` won't find it.
-- Installed the release bundle directly:
-  `curl -fLO https://github.com/TaylanTatli/iCloud-Linux/releases/download/1.1.6/io.github.TaylanTatli.iCloud-Linux.flatpak`
-  then `sudo flatpak install --system io.github.TaylanTatli.iCloud-Linux.flatpak`
-  (system-wide, matching how ZapZap is installed). Pulled `org.gnome.Platform/x86_64/50`
-  as a runtime dependency from the existing `flathub` remote; no extra remote was added
-  for the app itself (bundle installs don't need one to keep working, only to auto-update
-  — reinstall the same way for updates).
-- Unlike the old firefoxpwa setup (one "iCloud" window for everything), this one exports
-  a **separate launcher entry per service** — Mail, Calendar, Photos, Drive, Notes,
-  Reminders, Contacts, Find, Pages, Numbers, Keynote — each its own
-  `io.github.TaylanTatli.iCloud-Linux.<Service>.desktop`, all showing up individually in
-  the noctalia app launcher (`SUPER + Space`). No dedicated keybind, same as before.
-- Flatpak app data isn't yadm-tracked (same reasoning as ZapZap's `~/.var/app/...`
-  exclusion) — nothing user-specific to track here anyway, install state lives in
-  `.pkglist/flatpak.txt`.
-- Bound `SUPER + SHIFT + P` to Photos specifically (the exact `Exec=` line from
-  `io.github.TaylanTatli.iCloud-Linux.Photos.desktop`, no workspace targeting).
-  Originally `SUPER + ALT + P` since plain `SUPER + P` was already taken by
-  hyprpicker; moved to the `SUPER + SHIFT` scheme along with the rest of the
-  app-launch binds (see "App launch" section below). Verified live: launches the
-  "iCloud Photos" window correctly. No binds for the other services
-  (Mail, Calendar, etc.) — launcher-only, same as before.
-- Not yet signed in — installed, launcher entries and the Photos keybind confirmed
-  working, but the actual iCloud login flow hasn't been exercised yet.
+Noctalia has **two** relevant TOML files, and it's easy to edit the wrong one:
 
-### Earlier attempts (history)
+- `~/.config/noctalia/config.toml` — declarative, **yadm-tracked**, source of truth for a
+  fresh install.
+- `~/.local/state/noctalia/settings.toml` — runtime state written by the Settings GUI,
+  **not yadm-tracked** (lives under `.local/state`, which yadm doesn't sweep in). For any
+  table/key the GUI has ever touched (e.g. `[bar.default]`'s widget arrays, `[widget.clock]`
+  format, `[widget.workspaces]`), the state file's value wins at runtime over `config.toml`.
 
-- No official iCloud Linux client exists. Tried the AUR `icloud-for-linux-git` package
-  (unmaintained Electron wrapper around icloud.com, github.com/wmwnuk/icloud-for-linux,
-  flagged out-of-date since Aug 2024) — its build fails on this system because npm 12's
-  new script-allowlist blocks Electron's `postinstall`, and the old
-  `extract-zip`-based Electron/electron-packager toolchain (pinned to Electron 21,
-  ~2022-era) stalls mid-extraction against this system's Node v26 runtime — confirmed
-  by cross-checking the project's (mislabeled) "flatpak" fork, which is actually a Snap
-  manifest pinned to `node/16/stable`, i.e. the same fix, just via an even heavier path
-  (snapd isn't installed here and isn't native to Arch/CachyOS). **Worth knowing if
-  iCloud access is wanted again: don't retry this path, it's a dead end as-is.**
-  Installed instead via `firefoxpwa` (Mozilla's native-PWA tooling — no Electron
-  build involved), the same tooling used for WhatsApp/Sonos below.
-- Later removed entirely (`firefoxpwa site uninstall <id>` +
-  `firefoxpwa profile remove <id>`, dedicated profile since it wasn't shared with
-  any other PWA), plus the leftover `~/.local/share/icloud-pwa` staging directory
-  (manifest/favicon files used only for the one-time install, never yadm-tracked).
-  `firefoxpwa` itself is left installed — WhatsApp and Sonos still use it.
+This means `config.toml` can silently drift from what's actually running whenever the
+Settings UI is used instead of hand-editing the file. A full audit found and fixed several
+places where this had already happened: `bar.default.end` (the `media` widget had been
+removed and `notifications` wrapped in a capsule group via the GUI, but `config.toml` still
+had the old arrangement), `widget.clock`'s date format (live was UK `d/m/y`, tracked config
+still said US `m/d/y`), `widget.workspaces` (`show_labels`/`pill_scale`/`label_source`/
+`labels_only_when_occupied` all stale), and three whole tables that existed only in the
+state file with no tracked equivalent at all: `[nightlight]`, `[wallpaper]` (directory,
+automation settings, and the static per-monitor paths — deliberately **not** tracking
+`wallpaper.default`/`wallpaper.last`/`wallpaper.monitors.DP-2`, since automation cycles
+DP-2's wallpaper every 120s and pinning that would just be stale noise), and
+`[lockscreen_widgets]` (a full 4-monitor login-box layout, currently `enabled = false`).
+**Practical takeaway**: after using the Settings GUI for anything bar/widget/wallpaper/
+lockscreen-related, check `yadm diff .config/noctalia/config.toml` isn't silently missing
+the change — the GUI doesn't write there.
 
-## WhatsApp (`hypr/config/binds.lua`)
+Separately, `noctalia config validate` also flagged three plain **deprecated setting
+names** early on (fixed via `noctalia config export full` to find the current key names):
+`[widget.temp]`/`[widget.sysmon_2]` `show_label` → `show_value`, and `[widget.workspaces]`
+`display = "none"` → `show_labels = false` (later revised again by the GUI drift above).
 
-- No official WhatsApp Linux client exists. Using **ZapZap**
-  (`com.rtosta.zapzap`, Flathub — GTK4/libadwaita wrapper around web.whatsapp.com,
-  built on QtWebEngine), bound to `SUPER + SHIFT + M`
-  (`flatpak run com.rtosta.zapzap`, opens on the current workspace — the
-  `[workspace 2]` targeting it originally launched onto was removed).
-  ZapZap's flatpak data dir
-  (`~/.var/app/com.rtosta.zapzap/`) is deliberately untracked in yadm, same
-  reasoning as the Joplin exclusion above — live session/message data, not config.
-- ZapZap has no voice/video call button — a known upstream limitation, not
-  something specific to this machine (see
-  [rafatosta/zapzap#199](https://github.com/rafatosta/zapzap/issues/199) and
-  [#529](https://github.com/rafatosta/zapzap/issues/529)).
-- Tried working around it with a second, separate **firefoxpwa** WhatsApp Web
-  install (same tooling as Sonos/iCloud, full Firefox WebRTC) specifically for
-  calls. Removed again (`firefoxpwa site uninstall` + `profile remove`, dedicated
-  profile) — video calling turned out not to work through it either, so it wasn't
-  solving the problem it was installed for. Just using ZapZap for everything now;
-  no video calling on this machine currently.
+### Weather widget
 
-## Sonos (`hypr/config/binds.lua`)
+Added `weather` to `bar.default.center`, right after `clock` with a `spacer` gap
+(`[widget.weather]`, `type = "weather"`; `[location] address = "old alresford uk"`).
+The address is deliberately a plain place-name string, not a full postcode — a stricter
+`"Old Alresford, SO24 9DR, UK"` query broke geocoding entirely (showed "No location" in
+the bar) despite being more precise; reverted to the original string, which already
+resolves correctly to the right village via the cached `~/.cache/noctalia/location.json`
+lookup (lat/lon `51.11542, -1.14211`) and is precise enough for weather.
 
-- Installed the Sonos web app (play.sonos.com) as a native firefoxpwa app, same
-  pattern as iCloud/WhatsApp — real manifest at
-  `https://play.sonos.com/manifest.webmanifest`, no hand-written manifest needed.
-- Bound to `SUPER + SHIFT + O` (`firefoxpwa site launch 01KZQREYPXKDBAHY9JWSG975VB`,
-  no workspace targeting). Originally `SUPER + ALT + S`, but both `SUPER + S`
-  (scratchpad toggle) and `SUPER + SHIFT + S` (move window to special workspace)
-  were already taken when the app-launch binds got rationalized onto a uniform
-  `SUPER + SHIFT + <key>` scheme — kept both of those as-is and used `O` instead
-  (loose mnemonic: s**O**nos) rather than displacing existing window-management
-  binds.
+### Sonos control (local noctalia plugin)
 
-## Resume-from-suspend fixes (`hypr/config/variables.lua`, `hypr/scripts/resume-fix.sh`, systemd user service)
+`~/.local/share/noctalia/plugins/sonos-control/` (`plugin.toml` + `widget.luau`, **yadm-
+tracked** — unlike `.local/state`, `.local/share` is inside the yadm work tree). A bar
+widget that talks **directly** to each Sonos speaker's local UPnP/SOAP control endpoint on
+port 1400 — no cloud account, no bridge process, no Python dependency:
 
-- Symptom: after suspend/resume (idle-triggered or manual) or a reboot, the
-  Studio Display's monitor scale reset from `3.2000` to `2`, and Hyprland
-  keybinds (e.g. `SUPER + Return` for kitty) stopped responding.
-- Two separate causes, both stemming from the display's DP-over-Thunderbolt
-  (DPIA) tunnel:
-  1. **Port renumbering** (the actual scale bug): the display doesn't
-     reliably come back on the same DRM connector — observed as `DP-3` in
-     one boot and `DP-2` in the next (`hyprctl monitors -j`). `MONITOR1`
-     in `variables.lua` was hardcoded to `"DP-3"`, so after a renumber the
-     monitor rule (and the `PRIMARY_MONITOR`-based workspace/window rules
-     in `workspaces.lua`/`windowrules.lua`) silently stopped matching and
-     Hyprland fell back to an auto-computed scale. Fixed by switching
-     `MONITOR1` to `"desc:Apple Computer Inc StudioDisplay 0xBE714649"` —
-     Hyprland's EDID-description match, which is stable across
-     renumbering. This is the durable fix; `monitors.lua` itself is
-     unchanged (still references the `MONITOR1` variable, per its own
-     "edit variables.lua instead" comment).
-  2. **Slow link retrain on wake** (separate, causes stale keybinds): on
-     resume the DPIA AUX channel logs ~175 `amdgpu: [drm] DPIA AUX failed`
-     / `Mode Validation Warning` lines in the same second as
-     `PM: suspend exit` before the link settles. `hyprctl reload`
-     reapplies everything (monitors + binds) once triggered. Fixed with
-     `hypr/scripts/resume-fix.sh`, which runs `gdbus monitor` against
-     `org.freedesktop.login1`'s `PrepareForSleep` signal and, on
-     `(false,)` (resume), waits 2s then runs `hyprctl reload`. Wired up as
-     a long-running systemd `--user` service,
-     `systemd/user/hyprland-resume-fix.service`
-     (`WantedBy=graphical-session.target`, restarts on failure). A
-     `WantedBy=sleep.target` unit was tried first but systemd user
-     managers don't have a `sleep.target` by default (`enable` warned
-     "added as a dependency to a non-existent unit") — the D-Bus signal
-     approach is what actually works at the user-service level.
-- Verified live: after applying the `desc:` match, `hyprctl reload` set
-  `scale: 3.2` on the (still-renamed) `DP-2` connector immediately. The
-  resume-fix service is enabled and running; the `PrepareForSleep`
-  detection logic was confirmed against a manual D-Bus test but not yet
-  exercised by a real suspend cycle.
+- Speaker IPs/RINCON ids hardcoded in `widget.luau`, discovered via `avahi-browse -a -t`
+  (`_sonos._tcp`): Bedroom `192.168.1.181`, Dining `192.168.1.194`, Kitchen
+  `192.168.1.204` (a second Kitchen unit at `.227` is presumably its stereo-pair partner,
+  not separately targeted).
+- **Click** toggles play/pause, **scroll** adjusts volume (±2%/step), **right-click**
+  cycles between rooms.
+- Grouped/follower speakers are resolved to their actual group coordinator: a follower's
+  `GetPositionInfo` returns `TrackURI: x-rincon:<RINCON_ID>` instead of real track data, so
+  the widget re-targets that RINCON id's IP before reading transport state/metadata or
+  sending Play/Pause — otherwise a follower reports stale/empty state.
+- **Bug fixed after initial build**: left-click did nothing. `ui.label` doesn't support an
+  `onClick` prop (silently ignored — logged as a `ui-tree` warning, easy to miss); the
+  plugin runtime instead expects a reserved top-level Luau function literally named
+  `onClick()` for whole-widget clicks. Verified the fix by temporarily installing `ydotool`
+  (removed again after), precisely locating the widget's on-screen position, and confirming
+  a synthetic click actually flipped Dining between `PLAYING`/`STOPPED` via the real SOAP
+  call — not just that the click handler fired.
+- Plugin discovered/loaded from `~/.local/share/noctalia/plugins/<name>/` as a "local"
+  source (noctalia's dev-plugin convention); enabled via `[plugins] enabled =
+  ["milesj/sonos-control"]` in both `config.toml` and the live state file.
+- **DHCP reservations recommended but not yet configured** — the speaker IPs above are
+  currently unreserved on the router (a Vantiva/Technicolor-based ISP gateway, identified
+  via the gateway's MAC OUI `D8:D8:E5`; no admin credentials available to configure it from
+  here). MACs for reference: Bedroom `78:28:CA:E2:85:F8`, Dining `78:28:CA:E6:B2:EA`,
+  Kitchen `34:7E:5C:35:CD:B8` (+ second unit `38:42:0B:9B:1F:EE`). If the router ever
+  reassigns these, the widget's hardcoded IPs need updating in `widget.luau`.
+
+## Desktop watermark (`hypr/scripts/watermark.py`, `hypr/config/autostart.lua`)
+
+Persistent, click-through, always-on-top corner watermark ("Ayana" / "CACHYOS") for
+personal branding/aesthetic — no existing Noctalia feature does this, so it's a bespoke
+GTK4 + `gtk4-layer-shell` Python script.
+
+- Renders via the Wayland layer-shell overlay layer (`Gtk4LayerShell.Layer.OVERLAY`),
+  anchored bottom-right, click-through via an empty `cairo.Region()` input region set on
+  the `"realize"` signal so it never intercepts clicks meant for windows underneath.
+- **Linking-order bug**: plain launch, and `LD_PRELOAD=/usr/lib/liblayer-shell-preload.so`,
+  both failed with "GTK4 Layer Shell may have been linked after libwayland" — Python's own
+  startup already links `libwayland-client` before the layer-shell library gets a chance to
+  hook in. Fixed with `LD_PRELOAD=/usr/lib/libgtk4-layer-shell.so.0` (the versioned real
+  library path specifically — the unversioned symlink and the dedicated preload-helper
+  `.so` both did not work). Required installing the `gtk4-layer-shell` pacman package.
+- Wired into `autostart.lua` with that exact `LD_PRELOAD` invocation.
+- Tuned live per iterative feedback (font size, position, alignment, spacing, opacity),
+  verified via scaled screenshot crops each round — physical vs. logical pixel coordinates
+  matter here (`grim` captures physical px, `hyprctl layers` reports logical px; this
+  display's `scale=3.2` means a 3.2x conversion factor between them).
 
 ## Printer — Brother HL-1210W (CUPS + `brlaser`, AirPrint)
 
 - Discovered on the LAN via `avahi-browse -a -t -r` (mDNS): `Brother HL-1210W
   series` at `192.168.1.252` (`BRN106FD981C68E.local`), offering raw
-  JetDirect (port 9100), LPD (515), and IPP (631, `ipp/print`).
+  JetDirect (port 9100), LPD (515), and IPP (631, `ipp/print`). MAC address
+  `10:6F:D9:81:C6:8E` (matches the `BRN...` hostname — Brother derives it directly from
+  the MAC; also confirmed via `ip neigh show 192.168.1.252`). Not yet DHCP-reserved.
 - Installed `cups`, `cups-filters`, `ghostscript` (`cups-pdf` too, for an
   optional "print to PDF" virtual printer — not the point of this exercise,
   just came along with it), enabled `cups.service`.
@@ -528,6 +595,10 @@ these three changes:
 - Diagnosed Wi-Fi latency/jitter to the `mt7921e` driver's power-save mode plus
   suboptimal AP/BSSID selection on a dual-band mesh network; fixed via NetworkManager
   connection-profile settings (power save disabled, pinned to the better-performing BSSID).
+- Router is a Vantiva-manufactured (rebranded Technicolor Connected Home) ISP gateway at
+  `192.168.1.1`, identified via its MAC OUI (`D8:D8:E5`) rather than logging in — no admin
+  credentials available from here. Relevant if DHCP reservations are ever set up (see
+  *Sonos control* and *Printer* above, both currently unreserved).
 
 ## SSH
 
@@ -566,6 +637,9 @@ token over HTTPS.
   `gh auth login` sets up the credential helper automatically.
 - The old SSH key/agent setup above is left in place, untouched, as a
   fallback — nothing was deleted.
+- Also used directly (via `gh api`) to pull `amiles5/aerospace-config`'s `aerospace.toml`
+  for cross-referencing keybinds/workspace rules against this repo — see *Auto-assigned
+  workspaces* above.
 
 ## Hardware — Minisforum mini PC BIOS (blank screen on boot / Studio Display replug)
 
@@ -763,14 +837,17 @@ Power button to Studio Display visible was measured at ~60s. Broken down with
 - `pacman-explicit.txt` — output of `pacman -Qqe` (explicitly installed native
   packages; excludes dependencies pulled in automatically). To restore on a
   fresh install: `sudo pacman -S --needed - < ~/.pkglist/pacman-explicit.txt`.
+  Notable recent additions: `gparted`, `gtk4-layer-shell` (desktop watermark).
 - `pacman-foreign-aur.txt` — output of `pacman -Qqm` (foreign/AUR packages, i.e.
   not from a configured repo). No AUR helper (`paru`/`yay`) is installed on
-  this system, so anything in this file (currently just `asdbctl` — see
-  "Brightness" section above) needs to be reinstalled manually on recovery:
-  `git clone https://aur.archlinux.org/<pkg>.git && cd <pkg> && makepkg -si`.
-- `flatpak.txt` — output of `flatpak list --app --columns=application`
-  (currently just `com.rtosta.zapzap` — WhatsApp). Restore with
-  `flatpak install flathub $(cat ~/.pkglist/flatpak.txt)`.
+  this system, so anything in this file (`asdbctl`, `brlaser` — see the
+  "Brightness" and "Printer" sections above) needs to be reinstalled manually on
+  recovery: `git clone https://aur.archlinux.org/<pkg>.git && cd <pkg> && makepkg -si`.
+- `flatpak.txt` — output of `flatpak list --app --columns=application`.
+  Currently: `de.z_ray.Facetracker`, `hu.irl.cameractrls`,
+  `io.github.TaylanTatli.iCloud-Linux`, `io.github.webcamoid.Webcamoid` — **not**
+  ZapZap, which was uninstalled after switching WhatsApp to a Firefox PWA (see
+  *WhatsApp* below). Restore with `flatpak install flathub $(cat ~/.pkglist/flatpak.txt)`.
 - `update.sh` — regenerates all three files from current system state.
   Run automatically **weekly** by the `pkglist-update.timer` systemd user
   unit (`pkglist-update.{service,timer}`, `WantedBy=timers.target`; no cron
@@ -782,20 +859,77 @@ Power button to Studio Display visible was measured at ~60s. Broken down with
   a change; `Persistent=true` means a missed weekly run (machine off) fires
   once at next boot instead of being skipped.
 
+## WhatsApp (`hypr/config/binds.lua`, `hypr/config/windowrules.lua`)
+
+- No official WhatsApp Linux client exists. Originally used **ZapZap**
+  (`com.rtosta.zapzap`, Flathub — GTK4/libadwaita wrapper around web.whatsapp.com,
+  built on QtWebEngine), bound to `SUPER + SHIFT + M`.
+- ZapZap has no voice/video call button — a known upstream limitation, not
+  something specific to this machine (see
+  [rafatosta/zapzap#199](https://github.com/rafatosta/zapzap/issues/199) and
+  [#529](https://github.com/rafatosta/zapzap/issues/529)). Toggling ZapZap's beta mode
+  later did surface call buttons in the UI, but by then a replacement was already in
+  motion.
+- Tried working around it earlier with a second, separate **firefoxpwa** WhatsApp Web
+  install specifically for calls — removed again, video calling didn't work through it
+  either.
+- **ZapZap fully removed** (`flatpak uninstall com.rtosta.zapzap`) and replaced with a
+  proper **WhatsApp Web Firefox PWA** (`firefoxpwa site install
+  https://web.whatsapp.com/manifest.json`, same `firefoxpwa` tooling as Sonos/iCloud —
+  WhatsApp Web does publish a real manifest). Bound to the same `SUPER + SHIFT + M` key,
+  now targeting `[workspace 2]`, and auto-assigned to workspace 2 via `windowrules.lua`
+  (class `FFPWA-01M00K4G8CW4N60N8Q6G1BF8QB`) — see *Auto-assigned workspaces* above.
+- ZapZap's flatpak data dir (`~/.var/app/com.rtosta.zapzap/`) is gone along with the app.
+  The WhatsApp PWA's session/auth data lives under `.local/share/firefoxpwa`, which is
+  deliberately untracked — see *This repo* below.
+
+## Sonos (`hypr/config/binds.lua`, `hypr/config/windowrules.lua`)
+
+- Installed the Sonos web app (play.sonos.com) as a native firefoxpwa app, same
+  pattern as iCloud/WhatsApp — real manifest at
+  `https://play.sonos.com/manifest.webmanifest`, no hand-written manifest needed.
+- Bound to `SUPER + SHIFT + U` (`firefoxpwa site launch 01KZQREYPXKDBAHY9JWSG975VB`),
+  now targeting `[workspace 6]`, and auto-assigned to workspace 6 via `windowrules.lua`
+  (class `FFPWA-01KZQREYPXKDBAHY9JWSG975VB`). Originally `SUPER + ALT + S`, then
+  `SUPER + SHIFT + O` when app-launch binds were rationalized onto the uniform
+  `SUPER + SHIFT + <key>` scheme (both `SUPER + S` and `SUPER + SHIFT + S` were already
+  taken by scratchpad binds); later moved once more to `SUPER + SHIFT + U` to free up `O`
+  and give it a workspace-6 default.
+- A real in-bar **Sonos playback control widget** was also built — see *Noctalia shell —
+  Sonos control* above for the full technical writeup (local UPnP/SOAP plugin, no cloud
+  dependency). DHCP reservations for the speakers are recommended but not yet configured.
+
+## Joplin (`hypr/config/binds.lua`, `hypr/config/windowrules.lua`)
+
+- Installed natively via the `joplin-desktop` pacman package (not a Flatpak) — initially
+  missed because an earlier check only grepped the Hyprland config directory rather than
+  the whole system.
+- Bound to `SUPER + SHIFT + N`, launching `[workspace 4] joplin-desktop`; auto-assigned to
+  workspace 4 via `windowrules.lua`. The real Hyprland window class is
+  `joplin-app-desktop` — the `.desktop` file's `StartupWMClass` (`@joplin/app-desktop`) is
+  wrong and was not used; the class was confirmed live via `hyprctl clients -j` instead.
+- Notes/database (`.config/joplin-desktop`) are deliberately untracked — see *This repo*
+  below (live user data + secrets, not config).
+
 ## This repo
 
 - Tracked: `hypr`, `kitty`, `fish`, `fastfetch`, `noctalia`, `alacritty`, `btop`,
   GTK3/4 & Qt5/6ct theming, `dolphinrc`/`kdeglobals`, `micro` (`settings.json` +
-  colorschemes only), assorted XDG files (`mimeapps.list`, `user-dirs.*`, etc), and
-  `.pkglist` (package lists for recovery — see "Package lists" section below).
+  colorschemes only), assorted XDG files (`mimeapps.list`, `user-dirs.*`, etc),
+  `.pkglist` (package lists for recovery — see "Package lists" section above), and
+  `.local/share/noctalia/plugins/sonos-control` (the local Sonos-control plugin — note
+  this is the one thing tracked under `.local/share` rather than `.config`; everything
+  else under `.local/state`/`.local/share` is deliberately left untracked, see below).
 - Deliberately excluded: `.config/mozilla` (191MB Firefox profile — history/cookies/saved
   logins), `.config/pulse` and `.config/dconf` (small binary runtime state, not really
   "config"), micro's 146 bundled default syntax-highlighting files (not user-authored),
   `.config/joplin-desktop` (holds the actual notes `database.sqlite`, a live `api.token`
   secret in `settings.json`, and `ipc_secret_key.txt` — user data/secrets, not config),
-  and `.local/share/firefoxpwa` (bundled Firefox runtime binary + the WhatsApp/Sonos
-  PWA profiles' live session/auth cookies, same class as the `.config/mozilla`
-  exclusion above).
+  `.local/share/firefoxpwa` (bundled Firefox runtime binary + the WhatsApp/Sonos PWA
+  profiles' live session/auth cookies, same class as the `.config/mozilla` exclusion
+  above), and `~/.local/state/noctalia/settings.toml` (GUI-written runtime state — see
+  *Noctalia shell — bar widgets, plugins, and the config/state split* above for why this
+  one in particular is worth understanding, not just excluding).
 - `/etc/sddm.conf.d/autologin.conf` (`[Autologin]`, `User=milesj`,
   `Session=hyprland-uwsm`) is outside `$HOME` entirely, so yadm can't track it — noted here
   so it's not forgotten on a reinstall. Session name confirmed as `hyprland-uwsm` (not
@@ -807,6 +941,9 @@ Power button to Studio Display visible was measured at ~60s. Broken down with
   (the LAN-scoped port-631 rule) are outside `$HOME` too — see "Printer"
   section above for the exact commands to recreate both if lost.
   `cupsd.conf.bak` is the only backup; the rest isn't backed up anywhere.
+- `/etc/udev/hwdb.d/70-logitech-uk-102nd.hwdb` (Logitech UK keyboard 102nd-key remap) is
+  outside `$HOME` too — see *Input / keyboard model* above for the exact rule to recreate
+  it (`sudo systemd-hwdb update && sudo udevadm trigger` after writing the file).
 - Pushed to `https://github.com/amiles5/ayana-cachyos.git` (branch `master`)
   — HTTPS + `gh`-managed token, see "GitHub authentication" section above
   (was `git@github.com:...` SSH remote until this was switched over).
