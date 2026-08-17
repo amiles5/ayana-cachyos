@@ -71,11 +71,13 @@ ghostscript
 git
 github-cli
 glances
+gparted
 gst-libav
 gst-plugin-pipewire
 gst-plugin-va
 gst-plugins-bad
 gst-plugins-ugly
+gtk4-layer-shell
 gum
 hdparm
 hwdetect

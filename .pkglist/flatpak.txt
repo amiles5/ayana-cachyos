@@ -1,2 +1,4 @@
-com.rtosta.zapzap
+de.z_ray.Facetracker
+hu.irl.cameractrls
 io.github.TaylanTatli.iCloud-Linux
+io.github.webcamoid.Webcamoid
