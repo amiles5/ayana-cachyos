@@ -6,6 +6,7 @@ author       = "milesj"
 license      = "MIT"
 description  = "Play/pause, volume, room grouping, and Sonos Favourites for local Sonos speakers via direct UPnP/SOAP control."
 tags         = ["media", "sonos", "audio"]
+dependencies = ["pactl"]
 
 [[service]]
 id    = "service"

@@ -15,6 +15,16 @@ local rooms = {}
 local favorites = {}
 local togglePending = false
 
+-- Auto-pause: when the Studio Display's own speakers start outputting sound
+-- from the host (a call, a video, a notification), pause whichever Sonos
+-- room we're driving so the two don't overlap in the same physical room,
+-- then resume it once the host goes quiet again. Only resumes a room this
+-- code itself paused, and only if nothing else changed its transport while
+-- the host was making noise.
+local HOST_SINK = "alsa_output.usb-Apple_Inc._Studio_Display_00008030-001324E63E40A02E-02.analog-stereo"
+local hostAudioActive = false
+local autoPausedRoom = nil
+
 local function findRoom(name)
   for _, r in ipairs(ROOMS) do
     if r.name == name then return r end
@@ -153,6 +163,50 @@ local function stepFavoritesParse()
   end
 end
 
+local function onHostAudioStart()
+  local st = rooms[activeRoom]
+  if st and st.transport == "PLAYING" then
+    autoPausedRoom = activeRoom
+    local ip = coordIpFor(activeRoom)
+    soap(ip, "/MediaRenderer/AVTransport/Control", "AVTransport", "Pause",
+      "<InstanceID>0</InstanceID>", function(res) update() end)
+  end
+end
+
+local function onHostAudioStop()
+  if not autoPausedRoom then return end
+  local room = autoPausedRoom
+  autoPausedRoom = nil
+  local st = rooms[room]
+  -- Pausing a live stream (radio, etc.) often reports STOPPED rather than
+  -- PAUSED_PLAYBACK, so both count as "we paused it, safe to resume".
+  if st and (st.transport == "PAUSED_PLAYBACK" or st.transport == "STOPPED") then
+    local ip = coordIpFor(room)
+    soap(ip, "/MediaRenderer/AVTransport/Control", "AVTransport", "Play",
+      "<InstanceID>0</InstanceID><Speed>1</Speed>", function(res) update() end)
+  end
+end
+
+local function checkHostAudio()
+  noctalia.runAsync("pactl list sinks short", function(res)
+    if not res or res.exitCode ~= 0 or not res.stdout then return end
+    local isRunning = false
+    for line in res.stdout:gmatch("[^\n]+") do
+      if line:find(HOST_SINK, 1, true) and line:find("RUNNING", 1, true) then
+        isRunning = true
+        break
+      end
+    end
+    if isRunning and not hostAudioActive then
+      hostAudioActive = true
+      onHostAudioStart()
+    elseif not isRunning and hostAudioActive then
+      hostAudioActive = false
+      onHostAudioStop()
+    end
+  end)
+end
+
 -- pcall-wrapped: an uncaught error here (e.g. a malformed favourites blob)
 -- must not be allowed to silently stop the host from calling update() again -
 -- that would freeze all polling and command handling until the plugin is
@@ -161,6 +215,7 @@ function update()
   noctalia.setUpdateInterval(5000)
   local ok, err = pcall(function()
     stepFavoritesParse()
+    checkHostAudio()
     pollIndex = 1
     pollNext()
   end)
