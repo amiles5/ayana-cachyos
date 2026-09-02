@@ -589,9 +589,21 @@ bridge process, no Python dependency. Three entries declared in `plugin.toml`
   room?"), play/pause + a volume slider for the active room, and a scrollable list of
   Sonos Favourites to tap and play.
 - Speaker IPs/RINCON ids hardcoded in `service.luau`, discovered via `avahi-browse -a -t`
-  (`_sonos._tcp`): Bedroom `192.168.1.181`, Dining `192.168.1.194`, Kitchen
-  `192.168.1.204` (a second Kitchen unit at `.227` is presumably its stereo-pair partner,
-  not separately targeted).
+  (`_sonos._tcp`): Bedroom `192.168.1.181`, Dining `192.168.1.194`, Kitchen `192.168.1.204`,
+  Living Room `192.168.1.227` (this 4th speaker was added to the household after the
+  plugin's initial build and was invisible to it until fixed — the room list isn't
+  auto-discovered, so a new physical speaker needs a manual entry added here).
+- **Auto-pause on host audio**: watches `pactl list sinks short` for the Studio Display's
+  own analog-stereo sink (hardcoded by its full PipeWire sink name) going `RUNNING` — a
+  call, a video, a notification sound — and pauses whichever room is currently "active" (if
+  it was playing), resuming it once the host goes quiet again. Only resumes a room this
+  code itself paused, and only if nothing else already changed its transport in the
+  meantime (checked before firing `Play`). Pausing a live internet-radio stream (this
+  household's main use case) usually reports `STOPPED` rather than `PAUSED_PLAYBACK`, since
+  most streams can't be truly paused — both count as "still where we left it, safe to
+  resume". Checked alongside the room poll (~5s cadence); no separate faster timer, since
+  PipeWire's own sink-suspend hysteresis already provides a natural debounce against
+  flapping on brief gaps.
 - **Grouping**: `SetAVTransportURI` with `x-rincon:<coordinator-RINCON>` on the joining
   speaker adds it to a group; `BecomeCoordinatorOfStandaloneGroup` pulls it back out. Group
   membership itself is inferred cheaply with no extra UPnP service needed: a follower's
@@ -623,6 +635,16 @@ bridge process, no Python dependency. Three entries declared in `plugin.toml`
     precisely located widgets/buttons on-screen, and confirmed synthetic clicks produced
     real, correct state changes on the actual speakers via direct SOAP checks — not just
     that a click handler fired or a log warning went away.
+- **Machine restored from a Clonezilla disk image whose snapshot predated a commit already
+  pushed to GitHub** (the auto-pause-on-host-audio feature above) — the working directory
+  came back looking "out of date" even though `git log` on this machine showed nothing
+  missing, because the commit existed on `origin/master` but had never been pulled down to
+  this disk before the image was taken. Confirmed by fetching origin and diffing rather than
+  assuming — a local push/commit search alone would have missed it entirely, since nothing
+  was ever lost or uncommitted, just not yet fetched. Resolved with a plain fast-forward
+  merge (`yadm merge --ff-only origin/master`) after carefully undoing a parallel
+  reimplementation of the same feature built independently in the same session, before
+  realising the original already existed upstream.
 - Plugin discovered/loaded from `~/.local/share/noctalia/plugins/<name>/` as a "local"
   source (noctalia's dev-plugin convention); enabled via `[plugins] enabled =
   ["milesj/sonos-control"]` in both `config.toml` and the live state file.
@@ -630,7 +652,7 @@ bridge process, no Python dependency. Three entries declared in `plugin.toml`
   currently unreserved on the router (a Vantiva/Technicolor-based ISP gateway, identified
   via the gateway's MAC OUI `D8:D8:E5`; no admin credentials available to configure it from
   here). MACs for reference: Bedroom `78:28:CA:E2:85:F8`, Dining `78:28:CA:E6:B2:EA`,
-  Kitchen `34:7E:5C:35:CD:B8` (+ second unit `38:42:0B:9B:1F:EE`). If the router ever
+  Kitchen `34:7E:5C:35:CD:B8`, Living Room `38:42:0B:9B:1F:EE`. If the router ever
   reassigns these, `service.luau`'s hardcoded `ROOMS` table needs updating.
 
 ## Desktop watermark (`hypr/scripts/watermark.py`, `hypr/config/autostart.lua`)
