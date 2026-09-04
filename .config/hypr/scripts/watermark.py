@@ -34,8 +34,8 @@ def on_activate(app):
     Gtk4LayerShell.set_layer(window, Gtk4LayerShell.Layer.OVERLAY)
     Gtk4LayerShell.set_anchor(window, Gtk4LayerShell.Edge.BOTTOM, True)
     Gtk4LayerShell.set_anchor(window, Gtk4LayerShell.Edge.RIGHT, True)
-    Gtk4LayerShell.set_margin(window, Gtk4LayerShell.Edge.BOTTOM, 104)
-    Gtk4LayerShell.set_margin(window, Gtk4LayerShell.Edge.RIGHT, 178)
+    Gtk4LayerShell.set_margin(window, Gtk4LayerShell.Edge.BOTTOM, 24)
+    Gtk4LayerShell.set_margin(window, Gtk4LayerShell.Edge.RIGHT, 32)
     Gtk4LayerShell.set_exclusive_zone(window, -1)
     Gtk4LayerShell.set_keyboard_mode(window, Gtk4LayerShell.KeyboardMode.NONE)
 
