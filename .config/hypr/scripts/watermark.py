@@ -43,7 +43,7 @@ def on_activate(app):
     box.set_name("watermark")
     line1 = Gtk.Label(label="Ayana", halign=Gtk.Align.START)
     line1.set_name("line1")
-    line2 = Gtk.Label(label="CACHYOS", halign=Gtk.Align.START)
+    line2 = Gtk.Label(label="CachyOS", halign=Gtk.Align.START)
     line2.set_name("line2")
     box.append(line1)
     box.append(line2)
