@@ -525,6 +525,20 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
   machine means losing the ability to remote in or otherwise regain control until someone is
   physically there to wake and unlock it. Reverted back to `lock_and_suspend` shortly after —
   accepted the tradeoff deliberately rather than leaving it lock-only.
+- **Bug found (2026-09-05): resume-from-suspend leaves the Studio Display permanently black.**
+  After that day's `pacman -Syu` (kernel `linux-cachyos` 7.1.8 → 7.2.2, plus `mesa` and
+  `aquamarine` bumps), auto-suspend triggered twice and both times the machine came back from
+  S3 at the OS level fine (`journalctl`: `PM: suspend exit`, GPU/SMU resumed, Hyprland's
+  resume-fix service ran) but the display never lit up — repeated
+  `amdgpu ...: [drm] DPIA AUX failed on 0xf0000(10), error 7` in the kernel log, meaning the
+  Studio Display's DisplayPort-over-Thunderbolt (DPIA) link never retrains on wake. No
+  keypress or cable replug recovers it since the machine is genuinely awake behind a dead
+  link, not asleep — the only way out was a power-cycle, which (correctly, since it's a real
+  button press) triggers `systemd-logind`'s default poweroff-on-short-press and kills the
+  session outright. Root cause not yet isolated (kernel vs. mesa vs. aquamarine); next
+  diagnostic step is booting `linux-cachyos-lts` (6.18.48, already installed, has its own
+  Limine entry) and testing suspend/resume there. Until confirmed, `action` was changed back
+  to `lock` (no auto-suspend) to stop losing sessions to this — see `de98fc5`.
 
 ## Noctalia shell — bar widgets, plugins, and the config/state split
 
