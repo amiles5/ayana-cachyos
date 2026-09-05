@@ -525,20 +525,35 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
   machine means losing the ability to remote in or otherwise regain control until someone is
   physically there to wake and unlock it. Reverted back to `lock_and_suspend` shortly after —
   accepted the tradeoff deliberately rather than leaving it lock-only.
-- **Bug found (2026-09-05): resume-from-suspend leaves the Studio Display permanently black.**
-  After that day's `pacman -Syu` (kernel `linux-cachyos` 7.1.8 → 7.2.2, plus `mesa` and
-  `aquamarine` bumps), auto-suspend triggered twice and both times the machine came back from
-  S3 at the OS level fine (`journalctl`: `PM: suspend exit`, GPU/SMU resumed, Hyprland's
-  resume-fix service ran) but the display never lit up — repeated
-  `amdgpu ...: [drm] DPIA AUX failed on 0xf0000(10), error 7` in the kernel log, meaning the
-  Studio Display's DisplayPort-over-Thunderbolt (DPIA) link never retrains on wake. No
-  keypress or cable replug recovers it since the machine is genuinely awake behind a dead
-  link, not asleep — the only way out was a power-cycle, which (correctly, since it's a real
-  button press) triggers `systemd-logind`'s default poweroff-on-short-press and kills the
-  session outright. Root cause not yet isolated (kernel vs. mesa vs. aquamarine); next
-  diagnostic step is booting `linux-cachyos-lts` (6.18.48, already installed, has its own
-  Limine entry) and testing suspend/resume there. Until confirmed, `action` was changed back
-  to `lock` (no auto-suspend) to stop losing sessions to this — see `de98fc5`.
+- **Bug found and fixed (2026-09-05): resume-from-suspend leaves the Studio Display
+  permanently black.** After that day's `pacman -Syu` (kernel `linux-cachyos` 7.1.8 → 7.2.2,
+  plus `mesa` 26.1.6→26.2.2 and `aquamarine` 0.14.0→0.15.0), auto-suspend triggered twice and
+  both times the machine came back from S3 at the OS level fine (`journalctl`: `PM: suspend
+  exit`, GPU/SMU resumed) but the display never lit up — repeated `amdgpu ...: [drm] DPIA AUX
+  failed on 0xf0000(10), error 7` in the kernel log, meaning the Studio Display's
+  DisplayPort-over-Thunderbolt (DPIA) link never retrains on wake. No keypress or cable
+  replug recovers it since the machine is genuinely awake behind a dead link, not asleep —
+  the only way out was a power-cycle, which (correctly, since it's a real button press)
+  triggers `systemd-logind`'s default poweroff-on-short-press and kills the session outright.
+  - **Root cause, found by elimination:** `journalctl -b -N` on boots from *before* the
+    update (Sept 2, Sept 4) showed the exact same `DPIA AUX failed` kernel message on every
+    prior suspend/resume — it's a pre-existing, harmless quirk of this Thunderbolt link that
+    `resume-fix.sh`'s `hyprctl reload` had always successfully papered over. So the AUX
+    hiccup itself isn't new; what broke is *recovery* from it. Confirmed the kernel was
+    innocent by reproducing the identical failure on three kernels (7.2.2, `linux-cachyos-lts`
+    6.18.48, and 7.1.8 — the exact pre-update kernel). Downgrading the Hyprland
+    display-backend stack instead — `aquamarine` 0.14.0-2.1, `hyprland` 0.56.2-1,
+    `hyprtoolkit` 0.5.4-4.1, `mesa`/`opencl-mesa`/`vulkan-radeon`/
+    `vulkan-mesa-implicit-layers` (+ `lib32-*` variants) 26.1.6-1, all from cached packages —
+    fixed it: same `DPIA AUX failed` message on resume, but the display recovered and the
+    session survived.
+  - **Fix:** kernel left on current (7.2.2 — cleared, no reason to run an old one).
+    `aquamarine`/`hyprland`/`hyprtoolkit`/`mesa` (+ split/`lib32` packages) downgraded to
+    their pre-2026-09-05 versions and pinned via `IgnorePkg` in `/etc/pacman.conf` so the next
+    `pacman -Syu` doesn't silently reintroduce the regression. **Before ever removing that
+    pin**, check upstream changelogs for a fix to Hyprland/aquamarine's DRM output
+    reinitialization on resume, then re-test suspend/resume before trusting it unattended
+    again. `idle.behavior.lock.action` restored to `lock_and_suspend`.
 
 ## Noctalia shell — bar widgets, plugins, and the config/state split
 
