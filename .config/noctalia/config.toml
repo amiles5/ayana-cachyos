@@ -87,7 +87,7 @@ settings_show_advanced = true
 
 [idle.behavior.lock]
 timeout = 3600
-action = "lock_and_suspend"
+action = "lock"
 enabled = true
 
 [nightlight]
