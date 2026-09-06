@@ -554,6 +554,23 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
     pin**, check upstream changelogs for a fix to Hyprland/aquamarine's DRM output
     reinitialization on resume, then re-test suspend/resume before trusting it unattended
     again. `idle.behavior.lock.action` restored to `lock_and_suspend`.
+- **Bug found and fixed (2026-09-06): audio doesn't come back after resume, especially
+  after a Thunderbolt replug.** Same root cause family as the display blackout above — the
+  DPIA AUX hiccup on resume can leave the kernel's HDMI/DP audio ELD stale
+  (`monitor_present 0` / `eld_valid 0` in `/proc/asound/card0/eld#*` for the Radeon HDA
+  controller's DP pins) even though video recovers fine. PipeWire has no valid sink to bind
+  to and falls back to the dummy `auto_null` sink until the cable is physically replugged
+  (confirmed live: `wpctl status` showed only "Dummy Output" as the sink).
+  - **Fix:** `/etc/systemd/system-sleep/audio-hotplug-fix.sh` (root-owned, not yadm-tracked
+    — system-level like the `pacman.conf` pin above). On the `post` (resume) phase of every
+    sleep, it writes `1` to amdgpu's
+    `/sys/kernel/debug/dri/0000:35:00.0/DP-2/trigger_hotplug` debugfs file, which reruns the
+    exact same `dc_link_detect()` + ELD-read path a real cable replug does, then restarts
+    the user's `wireplumber`/`pipewire`/`pipewire-pulse` services so PipeWire re-enumerates
+    the now-valid sink. Runs as root (required — the debugfs file is root-only) via a
+    system-sleep hook rather than `resume-fix.sh` (which runs as the user, over D-Bus).
+    `DP-2` is hardcoded as that's the Studio Display's connector on this machine (see
+    `lockscreen_widgets` above); if the monitor topology ever changes, update the path.
 
 ## Noctalia shell — bar widgets, plugins, and the config/state split
 
