@@ -16,6 +16,7 @@ alias l.="ls -a | grep -e '^\.'"
 #end
 export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.pkglist:$PATH"
 
 # systemd user ssh-agent.service socket (ssh-agent.socket) — without this, ssh-add/ssh
 # can't find the agent and fail with "Could not open a connection to your authentication agent"
