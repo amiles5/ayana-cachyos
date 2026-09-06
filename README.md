@@ -571,6 +571,24 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
     system-sleep hook rather than `resume-fix.sh` (which runs as the user, over D-Bus).
     `DP-2` is hardcoded as that's the Studio Display's connector on this machine (see
     `lockscreen_widgets` above); if the monitor topology ever changes, update the path.
+  - **Investigation note (2026-09-06):** while chasing this live (without a real
+    suspend/resume), tried forcing amdgpu's `trigger_hotplug` debugfs file (both a bare
+    `echo 1` and a full `echo 0` / `echo 1` disconnect+reconnect), a real Hyprland
+    resolution modeset, an actual physical Thunderbolt replug, and a full unbind/rebind of
+    the `snd_hda_intel` driver for the audio PCI function (`0000:35:00.1`) — **none**
+    restored `eld_valid` in `/proc/asound/card0/eld#*`. Only a real suspend/resume (or
+    reboot) has ever been observed to fix it once broken; the DC/DRM audio-capability state
+    for this connector seems to only get (re)populated during that real transition, not any
+    software-simulated equivalent. **Caution:** immediately after that round of live
+    poking, a `systemctl suspend` test hung and never resumed (`journalctl -b`: `PM:
+    suspend entry` with no matching `suspend exit`, needed a hard power-cycle). This is
+    almost certainly caused by the poking itself (particularly the live HDA
+    unbind/rebind while amdgpu was actively driving the display) destabilizing driver
+    state, **not** a return of the pinned `aquamarine`/`hyprland`/`mesa` regression above —
+    but it means `audio-hotplug-fix.sh` is still unverified on an actual, undisturbed
+    suspend/resume cycle. Avoid repeating that kind of live debugfs/driver poking on a
+    connector that's actively in use; test any future audio fix via a clean suspend/resume
+    instead.
 
 ## Noctalia shell — bar widgets, plugins, and the config/state split
 
