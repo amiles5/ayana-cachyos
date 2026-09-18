@@ -2,7 +2,7 @@
 
 hl.config({
     input = {
-        kb_layout    = "us",
+        kb_layout    = "gb",
         kb_model     = "pc105",
         kb_options   = "terminate:ctrl_alt_bksp",
         kb_rules     = "evdev",
