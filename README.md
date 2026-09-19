@@ -590,6 +590,44 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
     connector that's actively in use; test any future audio fix via a clean suspend/resume
     instead.
 
+## Idle screensaver — `cbonsai` via `hypridle` (`hypr/hypridle.conf`, `hypr/scripts/screensaver.sh`)
+
+A terminal-based animated screensaver (a growing ASCII bonsai tree, `cbonsai`), shown during
+the earlier part of being idle — well before Noctalia's own 60-minute lock/suspend timeout
+above fires.
+
+- **`cbonsai` itself is AUR-only** (not in the official repos), and no AUR helper (`yay`/
+  `paru`) is installed on this machine. Built manually: `git clone
+  https://aur.archlinux.org/cbonsai.git && cd cbonsai && makepkg -si`. Its one build
+  dependency, `scdoc`, *is* in the official repos and was installed normally via `pacman`.
+  Since this didn't go through an AUR helper, a future `pacman -Syu` won't ever offer to
+  update it — check `cbonsai --version` against upstream occasionally if that matters.
+- **Deliberately kept separate from Noctalia's idle handling** rather than trying to add a
+  second stage to `noctalia/config.toml`'s `[idle.behavior.lock]` — Noctalia's idle actions
+  are limited to `lock`/`lock_and_suspend`/etc., with no arbitrary-command hook. Used
+  `hypridle` instead (official repo package), configured with a single 5-minute listener in
+  `~/.config/hypr/hypridle.conf` and started from `hypr/config/autostart.lua`. Both
+  `hypridle` and Noctalia listen to the compositor's idle-notify protocol independently and
+  don't conflict — `hypridle` only ever handles the screensaver; Noctalia still owns
+  lock/suspend entirely on its own, much longer timeout.
+- `hypridle.conf` has **no `general {}` block** (no `lock_cmd`/`before_sleep_cmd`/
+  `after_sleep_cmd`) — intentional, so it can't accidentally fight with Noctalia over
+  locking.
+- The screensaver itself is `hypr/scripts/screensaver.sh start`/`stop`, launching `kitty
+  --class cbonsai-screensaver -e cbonsai -li` (live+infinite mode: keeps growing new trees
+  forever) via `setsid ... & disown` (must be detached — `hypridle` doesn't wait for
+  `on-timeout` to return, and `cbonsai -i` never exits on its own). `stop` just does
+  `pkill -f` on that unique `--class` string, cleanly matching only this window and not any
+  other `kitty` instance.
+- A `windowrules.lua` rule matches `class = cbonsai-screensaver` and sets
+  `fullscreen_state = 2` to force it fullscreen on the Studio Display. Also needed
+  `opacity = "1.0 override"` in the same rule — **didn't work alone**: kitty's own
+  `background_opacity` bakes real per-pixel alpha into its rendered buffer, which is a
+  different thing from Hyprland's compositor-level window opacity and can't be undone by a
+  window rule after the fact. Fixed by passing `-o background_opacity=1.0` directly to
+  `kitty` in the launch command instead, overriding it for just this one instance without
+  touching the main `kitty.conf`.
+
 ## Noctalia shell — bar widgets, plugins, and the config/state split
 
 Noctalia has **two** relevant TOML files, and it's easy to edit the wrong one:
