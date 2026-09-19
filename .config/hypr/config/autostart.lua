@@ -8,5 +8,4 @@ hl.on("hyprland.start", function ()
     -- LD_PRELOAD works around gtk4-layer-shell needing to load before
     -- libwayland-client, which Python's own startup order breaks otherwise.
     hl.exec_cmd("env LD_PRELOAD=/usr/lib/libgtk4-layer-shell.so.0 python3 " .. os.getenv("HOME") .. "/.config/hypr/scripts/watermark.py")
-    hl.exec_cmd("hypridle")
 end)

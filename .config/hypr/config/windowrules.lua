@@ -57,7 +57,7 @@ hl.window_rule({ match = { class = "^(joplin-app-desktop)$" },                  
 hl.window_rule({ match = { class = "^(firefox|zen)$" },                                    workspace = "5" })
 hl.window_rule({ match = { class = "^(FFPWA-01KZQREYPXKDBAHY9JWSG975VB)$" },               workspace = "6" })
 
--- Idle screensaver (cbonsai, launched by hypridle -- see hypridle.conf)
+-- Manual terminal screensaver (cbonsai) -- run `hypr/scripts/screensaver.sh start`/`stop`
 hl.window_rule({ match = { class = "^(cbonsai-screensaver)$" }, fullscreen_state = 2, decorate = false, opacity = "1.0 override" })
 
 -- Apps

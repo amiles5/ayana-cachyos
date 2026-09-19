@@ -590,11 +590,11 @@ and `SUPER+1..6`/`SUPER+SHIFT+1..6` are now exclusively workspace binds.
     connector that's actively in use; test any future audio fix via a clean suspend/resume
     instead.
 
-## Idle screensaver — `cbonsai` via `hypridle` (`hypr/hypridle.conf`, `hypr/scripts/screensaver.sh`)
+## Terminal screensaver — `cbonsai` (manual only, `hypr/scripts/screensaver.sh`)
 
-A terminal-based animated screensaver (a growing ASCII bonsai tree, `cbonsai`), shown during
-the earlier part of being idle — well before Noctalia's own 60-minute lock/suspend timeout
-above fires.
+A terminal-based animated screensaver (a growing ASCII bonsai tree, `cbonsai`). **Manual
+trigger only** — `~/.config/hypr/scripts/screensaver.sh start` / `stop`. Automatic
+idle-triggering was attempted and abandoned; see below.
 
 - **`cbonsai` itself is AUR-only** (not in the official repos), and no AUR helper (`yay`/
   `paru`) is installed on this machine. Built manually: `git clone
@@ -602,31 +602,46 @@ above fires.
   dependency, `scdoc`, *is* in the official repos and was installed normally via `pacman`.
   Since this didn't go through an AUR helper, a future `pacman -Syu` won't ever offer to
   update it — check `cbonsai --version` against upstream occasionally if that matters.
-- **Deliberately kept separate from Noctalia's idle handling** rather than trying to add a
-  second stage to `noctalia/config.toml`'s `[idle.behavior.lock]` — Noctalia's idle actions
-  are limited to `lock`/`lock_and_suspend`/etc., with no arbitrary-command hook. Used
-  `hypridle` instead (official repo package), configured with a single 5-minute listener in
-  `~/.config/hypr/hypridle.conf` and started from `hypr/config/autostart.lua`. Both
-  `hypridle` and Noctalia listen to the compositor's idle-notify protocol independently and
-  don't conflict — `hypridle` only ever handles the screensaver; Noctalia still owns
-  lock/suspend entirely on its own, much longer timeout.
-- `hypridle.conf` has **no `general {}` block** (no `lock_cmd`/`before_sleep_cmd`/
-  `after_sleep_cmd`) — intentional, so it can't accidentally fight with Noctalia over
-  locking.
-- The screensaver itself is `hypr/scripts/screensaver.sh start`/`stop`, launching `kitty
-  --class cbonsai-screensaver -e cbonsai -li` (live+infinite mode: keeps growing new trees
-  forever) via `setsid ... & disown` (must be detached — `hypridle` doesn't wait for
-  `on-timeout` to return, and `cbonsai -i` never exits on its own). `stop` just does
-  `pkill -f` on that unique `--class` string, cleanly matching only this window and not any
-  other `kitty` instance.
+- `screensaver.sh start` launches `kitty --class cbonsai-screensaver -o
+  background_opacity=1.0 -e cbonsai -li` (live+infinite mode: keeps growing new trees
+  forever) via `setsid ... & disown` (must be detached — `cbonsai -i` never exits on its
+  own). `stop` does `pkill -f` on the unique `--class` string, matching only this window and
+  no other `kitty` instance.
 - A `windowrules.lua` rule matches `class = cbonsai-screensaver` and sets
   `fullscreen_state = 2` to force it fullscreen on the Studio Display. Also needed
   `opacity = "1.0 override"` in the same rule — **didn't work alone**: kitty's own
   `background_opacity` bakes real per-pixel alpha into its rendered buffer, which is a
   different thing from Hyprland's compositor-level window opacity and can't be undone by a
-  window rule after the fact. Fixed by passing `-o background_opacity=1.0` directly to
-  `kitty` in the launch command instead, overriding it for just this one instance without
-  touching the main `kitty.conf`.
+  window rule after the fact. The `-o background_opacity=1.0` passed directly to `kitty` in
+  the launch command is what actually fixes it, overriding it for just this one instance
+  without touching the main `kitty.conf`.
+- **Automatic idle-triggering (2026-09-19): tried, root-caused, abandoned.** Installed
+  `hypridle` (official repo package) with a single short listener to launch/kill the
+  screensaver on idle, deliberately separate from Noctalia's own `[idle.behavior.lock]`
+  (60 min). It appeared to fire once, then subsequent tests showed the screensaver flashing
+  open and immediately closing — invisible in normal use, easy to mistake for "not
+  triggering at all". **Root-caused, not guessed:** captured raw hardware input with
+  `libinput debug-events` (reads the kernel directly, bypassing Hyprland/hypridle entirely)
+  during a live failure — zero physical input occurred, yet `hypridle` logged `Resumed`
+  ~120ms after `Idled` every time. Isolated further with a no-op test config (`on-timeout
+  = true`, no screensaver involved at all) — same instant flip-flop, ruling out `kitty`/
+  `cbonsai`/window rules entirely. Found via `busctl` that **Noctalia itself owns
+  `org.freedesktop.ScreenSaver`** and runs its own idle-tracking (`noctalia.log`:
+  `registered idle heartbeat (1000ms)`). Confirmed the connection directly: temporarily
+  setting `idle.behavior.lock.enabled = false` and reloading made the false-resume
+  disappear completely (a clean `Idled` with no follow-up `Resumed`); re-enabling it
+  (**restored — this is the real lock/suspend safety net and must stay on**) brought the
+  interference straight back. Conclusion: Noctalia's own idle-notify heartbeat spuriously
+  resets the shared Wayland idle-notify state for *every* listener on the seat, not just its
+  own — a second idle-notify client (`hypridle` or otherwise) cannot coexist with it on this
+  Hyprland build. Checked whether Noctalia's `[hooks]` config section (real, and generic —
+  `hooks.events.*` in `/usr/share/noctalia/assets/translations/en.json`) could substitute
+  for a second idle client instead; no — its only relevant events are `session-locked`/
+  `session-unlocked`, which fire *after* lock, too late for a pre-lock screensaver stage.
+  `hypridle` was uninstalled (`pacman -Rns hypridle`) and its config/autostart entry
+  removed. **Before retrying this**, either find why Noctalia's heartbeat resets idle-notify
+  for other clients (may be worth a bug report upstream), or find a way to get the
+  screensaver behavior from inside Noctalia itself rather than a second competing listener.
 
 ## Noctalia shell — bar widgets, plugins, and the config/state split
 
