@@ -131,6 +131,7 @@ hl.bind(mainMod .. " + SHIFT + P",  hl.dsp.exec_cmd(launchPrefix .. "flatpak run
 hl.bind(mainMod .. " + SHIFT + N",  hl.dsp.exec_cmd("[workspace 4] " .. launchPrefix .. "joplin-desktop"))
 hl.bind(mainMod .. " + SHIFT + D",  hl.dsp.exec_cmd("[workspace 3] " .. launchPrefix .. "/home/milesj/moneydance/Moneydance"))
 hl.bind(mainMod .. " + SHIFT + B",  hl.dsp.exec_cmd(launchPrefix .. "kitty --class cbonsai-screensaver -o background_opacity=1.0 -e cbonsai -S"))
+hl.bind(mainMod .. " + SHIFT + T",  hl.dsp.exec_cmd(launchPrefix .. "kitty --class asciiquarium-screensaver -o background_opacity=1.0 -e asciiquarium"))
 hl.bind("CONTROL + SHIFT + Escape", hl.dsp.exec_cmd(launchPrefix .. TERMINAL .. " -e btop"))
 hl.bind(mainMod .. " + Z",          hl.dsp.exec_cmd(noctCall .. "settings-toggle"))
 hl.bind(mainMod .. " + X",          hl.dsp.exec_cmd(noctCall .. "panel-toggle control-center"))
