@@ -53,6 +53,7 @@ hl.window_rule({
 hl.window_rule({ match = { class = "^(kitty)$" },                                          workspace = "1" })
 hl.window_rule({ match = { class = "^(FFPWA-01M00K4G8CW4N60N8Q6G1BF8QB)$" },               workspace = "2" })
 hl.window_rule({ match = { class = "^(io\\.github\\.TaylanTatli\\.iCloud-Linux\\.Photos)$" }, workspace = "3" })
+hl.window_rule({ match = { class = "^(install4j-Moneydance)$" },                           workspace = "3" })
 hl.window_rule({ match = { class = "^(joplin-app-desktop)$" },                             workspace = "4" })
 hl.window_rule({ match = { class = "^(firefox|zen)$" },                                    workspace = "5" })
 hl.window_rule({ match = { class = "^(FFPWA-01KZQREYPXKDBAHY9JWSG975VB)$" },               workspace = "6" })

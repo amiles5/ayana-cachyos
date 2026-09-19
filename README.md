@@ -415,16 +415,36 @@ notification click, not just when using the dedicated bind:
 | --- | --- |
 | 1 | kitty |
 | 2 | WhatsApp Web (`FFPWA-01M00K4G8CW4N60N8Q6G1BF8QB`) |
-| 3 | iCloud Photos |
+| 3 | iCloud Photos, Moneydance (`install4j-Moneydance`) |
 | 4 | Joplin (`joplin-app-desktop`) |
 | 5 | Firefox / Zen |
 | 6 | Sonos (`FFPWA-01KZQREYPXKDBAHY9JWSG975VB`) |
 
 macOS-only apps in the aerospace-config source with no Linux equivalent installed
-(Finder, FaceTime, Moneydance, System Preferences, Logi Options+) are intentionally
-not mirrored here. Window classes were verified live via `hyprctl clients -j`, not
-guessed from `.desktop` file hints — Joplin's `StartupWMClass` in particular is
-wrong (`@joplin/app-desktop`), the real class is `joplin-app-desktop`.
+(Finder, FaceTime, System Preferences, Logi Options+) are intentionally not mirrored
+here. Window classes were verified live via `hyprctl clients -j`, not guessed from
+`.desktop` file hints — Joplin's `StartupWMClass` in particular is wrong
+(`@joplin/app-desktop`), the real class is `joplin-app-desktop`. Same story with
+**Moneydance (2026-09-19)**: its own bundled `create_desktop_file.sh` sets
+`StartupWMClass=moneydance`, but the actual live window class is
+`install4j-Moneydance` (install4j Java launcher naming) — fixed in the generated
+`.desktop` file below to match.
+
+### Moneydance (installed 2026-09-19, `~/moneydance/`)
+
+Installed manually from the vendor's Linux installer (`moneydance_linux_amd64.sh`, an
+install4j self-extracting script downloaded from
+[infinitekind.com](https://infinitekind.com/moneydance/) — not a package, so it won't
+show up in `pacman -Qe`/pkglist and won't auto-update; check for new versions manually).
+Installs to `~/moneydance/` (**not yadm-tracked** — a ~150MB bundled-JRE app install, same
+reasoning as not tracking AUR build output).
+
+The installer bundles its own `~/moneydance/create_desktop_file.sh`, but that only writes
+the `.desktop` file *inside* `~/moneydance/` itself, where no launcher scans for it. Copied
+it to `~/.local/share/applications/moneydance.desktop` instead (**yadm-tracked** — small,
+config-like, and needed for both the app launcher and the workspace-routing window rule
+above to work) and fixed its `StartupWMClass` per the mismatch noted above, then ran
+`update-desktop-database ~/.local/share/applications`.
 
 ## Keyboard/workspace cycling (`hypr/config/binds.lua`)
 
