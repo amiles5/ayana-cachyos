@@ -129,6 +129,7 @@ hl.bind(mainMod .. " + SHIFT + M",  hl.dsp.exec_cmd("[workspace 2] " .. launchPr
 hl.bind(mainMod .. " + SHIFT + U",  hl.dsp.exec_cmd("[workspace 6] " .. launchPrefix .. "firefoxpwa site launch 01KZQREYPXKDBAHY9JWSG975VB"))
 hl.bind(mainMod .. " + SHIFT + P",  hl.dsp.exec_cmd(launchPrefix .. "flatpak run --branch=master --arch=x86_64 --command=icloud-linux io.github.TaylanTatli.iCloud-Linux photos Photos"))
 hl.bind(mainMod .. " + SHIFT + N",  hl.dsp.exec_cmd("[workspace 4] " .. launchPrefix .. "joplin-desktop"))
+hl.bind(mainMod .. " + SHIFT + B",  hl.dsp.exec_cmd(launchPrefix .. "kitty --class cbonsai-screensaver -o background_opacity=1.0 -e cbonsai -S"))
 hl.bind("CONTROL + SHIFT + Escape", hl.dsp.exec_cmd(launchPrefix .. TERMINAL .. " -e btop"))
 hl.bind(mainMod .. " + Z",          hl.dsp.exec_cmd(noctCall .. "settings-toggle"))
 hl.bind(mainMod .. " + X",          hl.dsp.exec_cmd(noctCall .. "panel-toggle control-center"))
